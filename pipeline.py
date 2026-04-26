@@ -75,15 +75,20 @@ def discover_pdf_files(base_path: str = BASE_PATH) -> list:
     """Find ALL PDF files (bank statements + credit cards).
     Uses content-based detection to classify format."""
     try:
-        from pdf_parsers import detect_pdf_format
+        from pdf_parsers_v2 import detect_pdf_format
     except ImportError:
         return []
 
     base = Path(base_path)
     files = []
+    KNOWN_FORMATS = (
+        'desjardins_pdf', 'rbc_pdf',
+        'desjardins_cc_pdf', 'rbc_visa_pdf',
+        'desj_visa_perso_pdf', 'bdc_mc_pdf', 'td_visa_pdf',
+    )
     for f in sorted(base.rglob('*.pdf')):
         fmt = detect_pdf_format(str(f))
-        if fmt in ('desjardins_pdf', 'rbc_pdf', 'desjardins_cc_pdf', 'rbc_visa_pdf'):
+        if fmt in KNOWN_FORMATS:
             files.append({
                 'path': str(f),
                 'name': f.name,
@@ -506,6 +511,15 @@ def run_pipeline(base_path: str = BASE_PATH) -> dict:
             elif pdf_fmt == 'rbc_visa_pdf':
                 from pdf_parsers_v2 import parse_rbc_visa_pdf_v2
                 result = parse_rbc_visa_pdf_v2(finfo['path'])
+            elif pdf_fmt == 'desj_visa_perso_pdf':
+                from pdf_parsers_v2 import parse_desjardins_visa_perso_pdf_v2
+                result = parse_desjardins_visa_perso_pdf_v2(finfo['path'])
+            elif pdf_fmt == 'bdc_mc_pdf':
+                from pdf_parsers_v2 import parse_bdc_mc_pdf_v2
+                result = parse_bdc_mc_pdf_v2(finfo['path'])
+            elif pdf_fmt == 'td_visa_pdf':
+                from pdf_parsers_v2 import parse_td_visa_pdf_v2
+                result = parse_td_visa_pdf_v2(finfo['path'])
             else:
                 continue  # Unknown format — skip
             acct = result.account_number
@@ -558,9 +572,18 @@ def run_pipeline(base_path: str = BASE_PATH) -> dict:
                 elif pdf_fmt == 'rbc_visa_pdf':
                     from pdf_parsers_v2 import parse_rbc_visa_pdf_v2
                     result = parse_rbc_visa_pdf_v2(finfo['path'])
+                elif pdf_fmt == 'desj_visa_perso_pdf':
+                    from pdf_parsers_v2 import parse_desjardins_visa_perso_pdf_v2
+                    result = parse_desjardins_visa_perso_pdf_v2(finfo['path'])
+                elif pdf_fmt == 'bdc_mc_pdf':
+                    from pdf_parsers_v2 import parse_bdc_mc_pdf_v2
+                    result = parse_bdc_mc_pdf_v2(finfo['path'])
+                elif pdf_fmt == 'td_visa_pdf':
+                    from pdf_parsers_v2 import parse_td_visa_pdf_v2
+                    result = parse_td_visa_pdf_v2(finfo['path'])
                 else:
-                    from pdf_parsers import parse_pdf_file
-                    result = parse_pdf_file(finfo['path'])
+                    anomalies.append({'type': 'pdf_unknown_format', 'file': finfo['name'], 'detail': f'pdf_format={pdf_fmt!r}'})
+                    continue
             except Exception as e:
                 anomalies.append({'type': 'pdf_parse_error', 'file': finfo['name'], 'detail': str(e)})
                 continue

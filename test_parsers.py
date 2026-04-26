@@ -68,9 +68,13 @@ def print_validation(result):
                 print(f"      → Row {mm['row']}, {mm['date']}: expected {mm['expected']}, got {mm['actual']} (diff ${mm['diff']})")
 
 
-def run_test(test_spec: dict) -> bool:
-    """Run a single parser test. Returns True if all checks pass."""
+def run_test(test_spec: dict):
+    """Run a single parser test. Returns True/False/None (None = skipped, fixture missing)."""
     print_section(test_spec['label'])
+
+    if not Path(test_spec['path']).exists():
+        print(f"  SKIP: fixture not found at {test_spec['path']}")
+        return None
 
     result = parse_file(test_spec['path'])
     passed = True
@@ -141,27 +145,114 @@ def run_test(test_spec: dict) -> bool:
     return passed
 
 
+def smoke_test_imports() -> bool:
+    """Always-runnable: verify all parser modules import and detect_pdf_format works."""
+    print_section("SMOKE: module imports + API surface")
+    try:
+        from parsers import parse_file, ParseResult, Transaction
+        from pdf_parsers_v2 import (
+            detect_pdf_format,
+            parse_desjardins_pdf_v2,
+            parse_rbc_pdf_v2,
+            parse_desjardins_cc_pdf_v2,
+            parse_rbc_visa_pdf_v2,
+            parse_desjardins_visa_perso_pdf_v2,
+            parse_bdc_mc_pdf_v2,
+            parse_td_visa_pdf_v2,
+        )
+        from cc_classification import classify_transaction, process_all_cards
+        from reconciliation import build_monthly_matrix, reconcile_intercompany
+        print("  ✓ All parser modules importable")
+        print("  ✓ detect_pdf_format + 7 PDF parser functions present")
+        print("  ✓ classify_transaction + reconcile_intercompany present")
+        return True
+    except Exception as e:
+        print(f"  ✗ FAIL: {e}")
+        return False
+
+
+def run_pdf_test(label: str, path: str, parser_name: str, expected_format: str):
+    """Run a single PDF parser test. Returns True/False/None (None = skipped)."""
+    print_section(label)
+    if not Path(path).exists():
+        print(f"  SKIP: fixture not found at {path}")
+        return None
+    from pdf_parsers_v2 import detect_pdf_format
+    import pdf_parsers_v2 as v2
+
+    fmt = detect_pdf_format(path)
+    fmt_ok = fmt == expected_format
+    print(f"  Format detected: {fmt} {'✓' if fmt_ok else '✗ EXPECTED: ' + expected_format}")
+
+    parser = getattr(v2, parser_name)
+    result = parser(path)
+    print(f"  Transactions: {len(result.transactions)}")
+    debits = sum(t.debit or 0 for t in result.transactions)
+    credits = sum(t.credit or 0 for t in result.transactions)
+    print(f"  Total debits:  ${debits:>12,.2f}")
+    print(f"  Total credits: ${credits:>12,.2f}")
+
+    passed = fmt_ok and len(result.transactions) > 0
+    if not passed:
+        if not fmt_ok:
+            print("  ✗ Format mismatch")
+        if len(result.transactions) == 0:
+            print("  ✗ Zero transactions")
+    return passed
+
+
+PDF_TESTS = [
+    {
+        'label': 'BDC Mastercard PDF',
+        'path': '/Users/Owner_A/Downloads/Accounting Siam Shemie/compta/relevés cartes/BDC 3298 2024/sample.pdf',
+        'parser': 'parse_bdc_mc_pdf_v2',
+        'expected_format': 'bdc_mc_pdf',
+    },
+    {
+        'label': 'TD Aeroplan Visa PDF (0394)',
+        'path': '/Users/Owner_A/Downloads/Accounting Siam Shemie/Perso expenses/Relevés/TD_0394/TD_AEROPLAN_VISA_INFINITE_0394_Mar_24-2025.pdf',
+        'parser': 'parse_td_visa_pdf_v2',
+        'expected_format': 'td_visa_pdf',
+    },
+    {
+        'label': 'TD Aeroplan Visa Infinite Privilege PDF (8371)',
+        'path': '/Users/Owner_A/Downloads/Accounting Siam Shemie/compta/relevés cartes/TD 8371 2024/TD_AEROPLAN_VISA_INFINITE_PRIVILEGE_8371_Jan_22-2024.pdf',
+        'parser': 'parse_td_visa_pdf_v2',
+        'expected_format': 'td_visa_pdf',
+    },
+]
+
+
 def main():
     print("FORENSIC BOOKKEEPING — PARSER TEST SUITE")
-    print(f"Testing {len(TEST_FILES)} files, 1 per format")
     print(f"Date: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
     results = []
+    results.append(('SMOKE: imports', smoke_test_imports()))
+
     for test_spec in TEST_FILES:
-        ok = run_test(test_spec)
-        results.append((test_spec['label'], ok))
+        results.append((test_spec['label'], run_test(test_spec)))
+
+    for t in PDF_TESTS:
+        results.append((t['label'], run_pdf_test(t['label'], t['path'], t['parser'], t['expected_format'])))
 
     # Summary
     print_section("TEST SUMMARY")
-    all_passed = True
+    failed = passed = skipped = 0
     for label, ok in results:
-        icon = "✓ PASS" if ok else "✗ FAIL"
+        if ok is None:
+            icon = "  SKIP"
+            skipped += 1
+        elif ok:
+            icon = "✓ PASS"
+            passed += 1
+        else:
+            icon = "✗ FAIL"
+            failed += 1
         print(f"  {icon}  {label}")
-        if not ok:
-            all_passed = False
 
-    print(f"\n  {'ALL TESTS PASSED' if all_passed else 'SOME TESTS FAILED'}")
-    return 0 if all_passed else 1
+    print(f"\n  {passed} passed, {failed} failed, {skipped} skipped (fixture missing)")
+    return 0 if failed == 0 else 1
 
 
 if __name__ == '__main__':
