@@ -4,10 +4,10 @@ Test parsers on exactly 1 file per format.
 Validates before scaling to full dataset.
 
 Tests:
-  1. Desjardins CSV — Lotus Kitchen Jan 2025
+  1. Desjardins CSV — Siam House Jan 2025
   2. RBC CSV — Garden Bistro Dec 2025
-  3. Amex CSV — Siam House Jan 2025
-  4. Desjardins CSV — Siam House 2026.01 (format change test)
+  3. Amex CSV — Lotus Kitchen Jan 2025
+  4. Desjardins CSV — Lotus Kitchen 2026.01 (format change test)
 """
 
 import json
@@ -19,32 +19,32 @@ BASE = "./data/bank_statements"
 
 TEST_FILES = [
     {
-        'path': f"{BASE}/Lotus Kitchen 2025/RESTAURANT_B_Desjardins_Statement_2025.01.csv",
+        'path': f"{BASE}/Siam House 2025/SiamHouse_Desjardins_Statement_2025.01.csv",
         'expected_format': 'desjardins_csv',
-        'expected_entity': 'Lotus Kitchen',
+        'expected_entity': 'Siam House',
         'expected_bank': 'Desjardins',
-        'label': 'Desjardins CSV — Lotus Kitchen Jan 2025',
+        'label': 'Desjardins CSV — Siam House Jan 2025',
     },
     {
-        'path': f"{BASE}/Garden Bistro 2025/GardenBistro_RBC_Statement_2025.12.csv",
+        'path': f"{BASE}/Garden bistro 2025/GardenBistro_RBC_Statement_2025.12.csv",
         'expected_format': 'rbc_csv',
         'expected_entity': 'Garden Bistro',
         'expected_bank': 'RBC',
         'label': 'RBC CSV — Garden Bistro Dec 2025',
     },
     {
-        'path': f"{BASE}/Siam House 2025/Business credit card American express/SiamHouse_Amex_CreditCard_2025.01.csv",
+        'path': f"{BASE}/Lotus Kitchen 2025/Business credit card American express/LotusKitchen_Amex_CreditCard_2025.01.csv",
         'expected_format': 'amex_csv',
-        'expected_entity': 'Siam House',
+        'expected_entity': 'Lotus Kitchen',
         'expected_bank': 'Amex',
-        'label': 'Amex CSV — Siam House Jan 2025',
+        'label': 'Amex CSV — Lotus Kitchen Jan 2025',
     },
     {
-        'path': f"{BASE}/SiamHouse_Bank_statement_2026.01.csv",
+        'path': f"{BASE}/LotusKitchen_Bank_statement_2026.01.csv",
         'expected_format': 'desjardins_csv',
-        'expected_entity': 'Siam House',
+        'expected_entity': 'Lotus Kitchen',
         'expected_bank': 'Desjardins',
-        'label': 'Desjardins CSV — Siam House 2026.01 (format change test)',
+        'label': 'Desjardins CSV — Lotus Kitchen 2026.01 (format change test)',
     },
 ]
 

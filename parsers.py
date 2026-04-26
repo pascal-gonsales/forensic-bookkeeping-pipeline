@@ -651,18 +651,18 @@ def _validate_amex(transactions: list, warnings: list) -> ValidationResult:
 # ---------------------------------------------------------------------------
 
 ENTITY_PATTERNS = [
-    (r'mae\s*sri', 'Lotus Kitchen'),
-    (r'siam\s*thai', 'Siam House'),
+    (r'mae\s*sri', 'Siam House'),
+    (r'siam\s*thai', 'Lotus Kitchen'),
     (r'siam\s*s\b', 'Siam Holdings Inc'),
     (r'garden\s*room', 'Garden Bistro'),
-    (r'vine_room|wine\s*room', 'Vine Room'),
+    (r'vine|wine\s*room', 'Vine Room'),
 ]
 
 
 def _guess_entity_from_path(file_path: str) -> str:
     """Guess entity from file path. This is a HINT only — not authoritative.
     Only checks the last 3 path components to avoid false matches from
-    Google Drive paths (e.g., owner@example.com in the drive URL)."""
+    Google Drive paths (e.g., owner_a@example.com in the drive URL)."""
     parts = Path(file_path).parts
     # Only check last 3 components (folder/subfolder/filename)
     relevant = '/'.join(parts[-3:]).lower() if len(parts) >= 3 else file_path.lower()

@@ -792,7 +792,7 @@ def parse_desjardins_cc_pdf_v2(file_path: str) -> ParseResult:
                         'VOLUME', 'REMISE', 'NOUVEAU SOLDE', 'PAIEMENT DÛ',
                         'PAIEMENT MINIMUM', 'ATTENTION', 'LE MONTANT',
                         'SERA APPLIQUÉ', 'AUTOMATIQUEMENT', 'PAGE',
-                        'CORP INC', 'OWNER_A', 'STREET_NAME',
+                        'QUÉBEC INC', 'OWNER_A', 'STREET_FRAGMENT',
                         'NEIGHBORHOOD', 'SOLDE COURANT', 'REDRESSEMENT',
                     ]):
                         continue
@@ -1436,7 +1436,7 @@ def parse_desjardins_visa_perso_pdf_v2(file_path: str) -> ParseResult:
     Same as business CC but with BONIDOLLARS column (x=429-473).
     Description at x=220-413 (wider than business x=273-465).
     Amount at x=474-532.
-    May have multiple card sections (OWNER_A + OWNER_A_SPOUSE).
+    May have multiple card sections (OWNER_A + SIAM OWNER_LASTNAME).
     """
     warnings = []
     transactions = []
@@ -1484,8 +1484,8 @@ def parse_desjardins_visa_perso_pdf_v2(file_path: str) -> ParseResult:
                         "DATE  D'INSCRIPTION", 'DESCRIPTION', 'MONTANT',
                         'BONIDOLLARS', 'SOMMAIRE', 'ESTIMATION',
                         'PAIEMENT MINIMUM', 'LIMITE DE CRÉDIT',
-                        "TAUX D'INTÉRÊT", 'OWNER_A', 'OWNER_A_SPOUSE',
-                        'STREET_NAME', 'NEIGHBORHOOD QC', 'NUMÉRO DE COMPTE',
+                        "TAUX D'INTÉRÊT", 'OWNER_A', 'SIAM OWNER_LASTNAME',
+                        'STREET_FRAGMENT', 'NEIGHBORHOOD QC', 'NUMÉRO DE COMPTE',
                         'RELEVÉ DE COMPTE', 'RENSEIGNEMENTS',
                         'DÉTAILS À LA SECTION',
                     ]):

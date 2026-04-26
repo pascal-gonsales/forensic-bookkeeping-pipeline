@@ -32,8 +32,8 @@ BASE_PATH = "./data/bank_statements"
 
 # Known Desjardins account → entity mapping (verified from actual data)
 ACCOUNT_ENTITY_MAP = {
-    '0011001': 'Lotus Kitchen',
     '0011002': 'Siam House',
+    '0011001': 'Lotus Kitchen',
     '0011003': 'Siam Holdings Inc',
     '0011004': 'Vine Room',
     '0011005': 'Owner_A (Personnel)',       # Owner_A's personal Desjardins account
@@ -46,8 +46,8 @@ ACCOUNT_ENTITY_MAP = {
 # Shareholder advance = compensation/salary via holding company
 REIMBURSEMENT_DESTINATIONS = {'Owner_A (Personnel)', 'Owner_A (Personal)'}
 SHAREHOLDER_ADVANCE_DESTINATIONS = {'Holding Owner_A+Siam'}
-OWNER_B_REIMBURSEMENT_PATTERN = re.compile(r'Owner_B|Owner_B\s*Zare[ia]', re.IGNORECASE)
-OWNER_B_ADVANCE_PATTERN = re.compile(r'Owner_B\s*Holding', re.IGNORECASE)
+ALI_REIMBURSEMENT_PATTERN = re.compile(r'Owner_B|Owner_B\s*Zare[ia]', re.IGNORECASE)
+ALI_ADVANCE_PATTERN = re.compile(r'Owner_B\s*Holding', re.IGNORECASE)
 
 # Reverse: entity → account for transfer matching
 ENTITY_ACCOUNT_MAP = {v: k for k, v in ACCOUNT_ENTITY_MAP.items()}
@@ -106,7 +106,7 @@ TRANSFER_FROM_PATTERN = re.compile(r'Virement.*Acc[èe]sD.*?/\s*de\s*(\d{6,7})\s
 
 # Interac transfers to Owner_A
 # Owner_A detection: handles both CSV "/Owner_A" and PDF "/ Owner_A" (space after slash)
-# Also handles RBC "Virement envoyé Owner A"
+# Also handles RBC "Virement envoyé Owner_A"
 OWNER_A_INTERAC_PATTERN = re.compile(r'Virement\s+Interac\s+[àa]\s*/\s*Owner_A', re.IGNORECASE)
 OWNER_A_RBC_PATTERN = re.compile(r'Virement\s+envoy[ée]\s+Owner_A', re.IGNORECASE)
 OWNER_A_INTERAC_FROM = re.compile(r'Virement\s+Interac.*de\s*/Owner_A', re.IGNORECASE)
@@ -292,7 +292,7 @@ def match_intercompany_transfers(transfers: list) -> tuple:
 CATEGORY_RULES = [
     # Revenue
     (r'PAYFACTO CAD PAYFACTO', 'revenue_pos', 'Revenue POS (Payfacto)'),
-    (r'POS System Commerce.*LS', 'revenue_pos', 'Revenue POS (POS System)'),
+    (r'Lightspeed Commerce.*LS', 'revenue_pos', 'Revenue POS (Lightspeed)'),
     (r'AMEX 2992156570', 'revenue_amex', 'Revenue AMEX'),
     (r'Uber Holdings C', 'revenue_delivery', 'Revenue Uber Eats'),
     (r'DoorDash', 'revenue_delivery', 'Revenue DoorDash'),
@@ -320,8 +320,8 @@ CATEGORY_RULES = [
     (r'REV QC|REVENU QUEBEC', 'tax_rq', 'Tax (Revenue Quebec)'),
     (r'PME MTL|VILLE DE|MUNICIPAL', 'tax_municipal', 'Tax (Municipal)'),
 
-    # POS System capital (cash advance repayment)
-    (r'Paiement /LSPD CAPITAL|LSPD CAPITAL', 'loan_lightspeed', 'POS System Cash Advance Repayment'),
+    # Lightspeed capital (cash advance repayment)
+    (r'Paiement /LSPD CAPITAL|LSPD CAPITAL', 'loan_lightspeed', 'Lightspeed Cash Advance Repayment'),
 
     # Government tax remittances (GST/QST)
     (r'Remise gouvernementale.*TPS|Remise gouvernementale.*TVQ', 'tax_gst_qst', 'Tax Remittance (TPS-TVQ)'),
@@ -334,8 +334,8 @@ CATEGORY_RULES = [
     # Owner_B Holding (shareholder advance)
     (r'Owner_B\s*Holding', 'ali_advance', 'Owner_B Holding (Shareholder Advance)'),
 
-    # Supplier Epsilon (food supplier)
-    (r'Supplier Epsilon', 'supplier_food', 'Supplier (Supplier Epsilon)'),
+    # SUPPLIER_G (food supplier)
+    (r'SUPPLIER_G', 'supplier_food', 'Supplier (SUPPLIER_G)'),
 
     # Loans & leases
     (r'VERSEMENT PRET|Versement sur pr[êe]t', 'loan', 'Loan Payment'),
@@ -355,7 +355,7 @@ CATEGORY_RULES = [
     # Suppliers (restaurant-specific)
     (r'Brasseurs|Molson|Labatt', 'supplier_beverage', 'Supplier (Beverage)'),
     (r'SUPPLIER_A|SUPPLIER_B|SUPPLIER_C|march[ée]', 'supplier_food', 'Supplier (Food)'),
-    (r'CLEANING_CO|Cintas', 'supplier_cleaning', 'Supplier (Cleaning/Linen)'),
+    (r'ECOLAB|Cintas', 'supplier_cleaning', 'Supplier (Cleaning/Linen)'),
     (r'Sysco|GFS|Gordon Food', 'supplier_food', 'Supplier (Food Distributor)'),
     (r'SAQ\d', 'supplier_alcohol', 'Supplier (SAQ)'),
 
@@ -624,11 +624,11 @@ def run_pipeline(base_path: str = BASE_PATH) -> dict:
     owner_a_holding = [t for t in all_transfers
                       if t.transfer_type == 'intercompany' and t.destination_entity == 'Holding Owner_A+Siam']
     ali_reimbursements = [t for t in all_transfers
-                          if t.transfer_type in ('interac_out',) and OWNER_B_REIMBURSEMENT_PATTERN.search(t.destination_entity or t.description or '')]
+                          if t.transfer_type in ('interac_out',) and ALI_REIMBURSEMENT_PATTERN.search(t.destination_entity or t.description or '')]
     # Owner_B Holding payments are regular debits, not transfer-detected — search all transactions
     ali_advances = []
     for tx in all_transactions:
-        if OWNER_B_ADVANCE_PATTERN.search(tx.description):
+        if ALI_ADVANCE_PATTERN.search(tx.description):
             ali_advances.append(TransferRecord(
                 date=tx.date, amount=tx.debit or 0,
                 source_entity=tx.raw_row.get('entity', ''),
@@ -872,7 +872,7 @@ def generate_report(pipeline_result: dict, output_dir: str = 'output') -> str:
     lines.append("")
 
     # --- Owner_B ---
-    lines.append("## 3b. OWNER_B — REMBOURSEMENTS vs AVANCES")
+    lines.append("## 3b. ALI — REMBOURSEMENTS vs AVANCES")
     lines.append("")
     ali_reimb_total = sum(t.amount for t in ali_reimb)
     ali_adv_total = sum(t.amount for t in ali_adv)
@@ -884,7 +884,7 @@ def generate_report(pipeline_result: dict, output_dir: str = 'output') -> str:
     lines.append("")
 
     # --- Comparison ---
-    lines.append("## 3c. COMPARAISON OWNER_A vs OWNER_B")
+    lines.append("## 3c. COMPARAISON OWNER_A vs ALI")
     lines.append("")
     lines.append("| | Owner_A | Owner_B | Ratio |")
     lines.append("|---|--------|-----|-------|")
@@ -945,7 +945,7 @@ def generate_report(pipeline_result: dict, output_dir: str = 'output') -> str:
 
     # --- Anomalies ---
     if anomalies:
-        lines.append("## 7. ANOMOWNER_BES DÉTECTÉES")
+        lines.append("## 7. ANOMALIES DÉTECTÉES")
         lines.append("")
         for a in anomalies:
             lines.append(f"- **{a['type']}**: {a['detail']}")
@@ -1005,14 +1005,14 @@ def generate_report(pipeline_result: dict, output_dir: str = 'output') -> str:
         print(f"  Owner_A transfers CSV: {owner_a_path}")
 
     # Write Owner_B transfers
-    all_ali = ali_reimb + ali_adv
-    if all_ali:
+    all_owner_b = ali_reimb + ali_adv
+    if all_owner_b:
         ali_path = out / 'ali_transfers.csv'
         with open(ali_path, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(['date', 'amount', 'from', 'to', 'type', 'description', 'file'])
-            for t in sorted(all_ali, key=lambda x: x.date):
-                xfer_type = 'remboursement' if OWNER_B_REIMBURSEMENT_PATTERN.search(t.destination_entity or '') else 'avance'
+            for t in sorted(all_owner_b, key=lambda x: x.date):
+                xfer_type = 'remboursement' if ALI_REIMBURSEMENT_PATTERN.search(t.destination_entity or '') else 'avance'
                 writer.writerow([t.date, t.amount, t.source_entity, t.destination_entity,
                                xfer_type, t.description, t.file_path])
         print(f"  Owner_B transfers CSV: {ali_path}")
