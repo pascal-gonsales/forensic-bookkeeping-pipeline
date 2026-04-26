@@ -1553,3 +1553,58 @@ def parse_desjardins_visa_perso_pdf_v2(file_path: str) -> ParseResult:
         validation=ValidationResult(ok=len(transactions) > 0, checks=checks),
         file_path=file_path, warnings=warnings, raw_line_count=raw_line_count,
     )
+
+
+# ---------------------------------------------------------------------------
+# PDF format detection (content-based, never trust filenames)
+# ---------------------------------------------------------------------------
+
+def detect_pdf_format(file_path: str) -> str:
+    """Inspect first page text to classify PDF format.
+
+    Returns one of:
+      desjardins_pdf, desjardins_cc_pdf, desj_visa_perso_pdf,
+      rbc_pdf, rbc_visa_pdf,
+      bdc_mc_pdf, td_visa_pdf,
+      unknown_pdf
+    """
+    try:
+        with pdfplumber.open(file_path) as pdf:
+            if not pdf.pages:
+                return 'unknown_pdf'
+            text = pdf.pages[0].extract_text() or ''
+            text_upper = text.upper()
+            text_compact = text_upper.replace(' ', '')
+            header = text_upper[:600]
+
+            # TD Aeroplan Visa (personal CC, account XXXX)
+            if 'TD' in text_upper and ('AEROPLAN' in text_upper or 'AÉROPLAN' in text_upper or 'AÉROPLAN' in text):
+                return 'td_visa_pdf'
+
+            # BDC Mastercard (personal CC, account ZZZZ)
+            # Skip BDC loan agreements (different document type)
+            if ('SOLUTIONS MASTERCARD' in text_upper
+                    or ('BDC' in text_upper and 'MASTERCARD' in text_upper)):
+                return 'bdc_mc_pdf'
+
+            # RBC family
+            if 'BANQUEROYALE' in text_compact or 'RBC' in text_upper:
+                if 'VISA' in text_upper and 'RELEVÉ' in text_upper:
+                    return 'rbc_visa_pdf'
+                return 'rbc_pdf'
+
+            # Desjardins CC (business): "AFFAIRES" + "MARGE" in header
+            if 'AFFAIRES' in header and 'MARGE' in header:
+                return 'desjardins_cc_pdf'
+
+            # Desjardins Visa personal (7006): card number 4530 92** or BONIDOLLARS column
+            if 'BONIDOLLARS' in text_upper or '4530 92' in text:
+                return 'desj_visa_perso_pdf'
+
+            # Desjardins bank
+            if 'DESJARDINS' in text_upper or 'CAISSE' in text_upper:
+                return 'desjardins_pdf'
+
+            return 'unknown_pdf'
+    except Exception:
+        return 'unknown_pdf'
