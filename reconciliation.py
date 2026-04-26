@@ -29,7 +29,7 @@ def load_transactions(path='output/master_transactions.csv'):
 
 
 # Entities that are actual business accounts (NOT personal)
-BUSINESS_ENTITIES = {'Lotus Kitchen', 'Vine Room', 'Siam House', 'Siam Holdings Inc', 'Garden Bistro'}
+BUSINESS_ENTITIES = {'Siam House', 'Vine Room', 'Lotus Kitchen', 'Siam Holdings Inc', 'Garden Bistro'}
 PERSONAL_ENTITIES = {'Owner_A (Personnel)', 'Holding Owner_A+Siam'}
 
 
@@ -89,8 +89,8 @@ def reconcile_intercompany(transfers):
     """
     Match outflows with inflows bidirectionally.
 
-    A transfer "Lotus Kitchen → Siam Holdings Inc, $5,000 on 2024-03-15" should have
-    a matching "Siam Holdings Inc received from Lotus Kitchen, $5,000 on 2024-03-15".
+    A transfer "Siam House → Siam Holdings Inc, $5,000 on 2024-03-15" should have
+    a matching "Siam Holdings Inc received from Siam House, $5,000 on 2024-03-15".
 
     Returns (matched_pairs, unmatched_outflows, unmatched_inflows).
     """
@@ -313,24 +313,24 @@ def generate_report(transfers, transactions, output_path='output/INTERCO_RECONCI
     lines.append('')
 
     # === Section 4: Owner_B ===
-    lines.append('## 4. OWNER_B — PORTRAIT COMPLET')
+    lines.append('## 4. ALI — PORTRAIT COMPLET')
     lines.append('')
 
     with open('output/ali_transfers.csv', 'r') as f:
-        ali = list(csv.DictReader(f))
+        owner_b = list(csv.DictReader(f))
 
-    ali_r = sum(float(r['amount']) for r in ali if r.get('type') == 'remboursement')
-    ali_a = sum(float(r['amount']) for r in ali if r.get('type') == 'avance')
+    ali_r = sum(float(r['amount']) for r in owner_b if r.get('type') == 'remboursement')
+    ali_a = sum(float(r['amount']) for r in owner_b if r.get('type') == 'avance')
 
     lines.append(f'| Type | Montant | Transferts |')
     lines.append(f'|------|---------|-----------|')
-    lines.append(f'| Remboursements | **${ali_r:,.2f}** | {sum(1 for r in ali if r.get("type")=="remboursement")} |')
-    lines.append(f'| Avances | **${ali_a:,.2f}** | {sum(1 for r in ali if r.get("type")=="avance")} |')
-    lines.append(f'| **TOTAL** | **${ali_r+ali_a:,.2f}** | {len(ali)} |')
+    lines.append(f'| Remboursements | **${ali_r:,.2f}** | {sum(1 for r in owner_b if r.get("type")=="remboursement")} |')
+    lines.append(f'| Avances | **${ali_a:,.2f}** | {sum(1 for r in owner_b if r.get("type")=="avance")} |')
+    lines.append(f'| **TOTAL** | **${ali_r+ali_a:,.2f}** | {len(owner_b)} |')
     lines.append('')
 
     # === Section 5: Comparison ===
-    lines.append('## 5. COMPARAISON OWNER_A vs OWNER_B (2024+2025)')
+    lines.append('## 5. COMPARAISON OWNER_A vs ALI (2024+2025)')
     lines.append('')
     lines.append('| | Owner_A | Owner_B | Ratio |')
     lines.append('|---|--------|-----|-------|')

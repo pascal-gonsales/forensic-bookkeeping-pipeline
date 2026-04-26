@@ -10,9 +10,9 @@ Classifies Owner_A's personal CC transactions into:
 - CARD_FEE: credit card fees/insurance (excluded from both sides)
 
 Rules:
-- Known restaurant suppliers = BUSINESS (Damen, Ferro, Newon, Warehouse Club, SAQ >$300, etc.)
+- Known restaurant suppliers = BUSINESS (Damen, Ferro, Newon, Costco, SAQ >$300, etc.)
 - SAQ < $300 = VERIFY (could be personal)
-- Recurring subscriptions used by restos = BUSINESS (Videotron, POS System, etc.)
+- Recurring subscriptions used by restos = BUSINESS (Videotron, Lightspeed, etc.)
 - Travel with partners = TEAM_BUILDING at 50%
 - Fitness, personal shopping = PERSONAL
 - Card fees/insurance = CARD_FEE (excluded)
@@ -30,34 +30,34 @@ from pathlib import Path
 
 # BUSINESS: definitely restaurant supplier expenses
 BUSINESS_PATTERNS = [
-    # Food suppliers (handle "SUPPLIER_ALPHA SERVICE", "SUPPLIER_ALPHASERVICEOWNER_BMENTAIRE", "SUPPLIER_ALPHA OWNER_BMENTAIRE")
-    (r'SUPPLIER_ALPHA\s*SERVICE|SUPPLIER_ALPHASERVICE|SUPPLIER_ALPHA\s*OWNER_BMENTAIRE', 'supplier_food', 'Supplier Alpha'),
-    (r'SUPPLIER_BETA\s*POISSON|SUPPLIER_BETAPOISSON', 'supplier_food', 'Supplier Beta & Fruits'),
-    (r'SUPPLIER_IOTA', 'supplier_food', 'Frandon'),
-    (r'SUPPLIER_GAMMA|MARCH[ÉE]\s*SUPPLIER_GAMMA', 'supplier_food', 'Supplier Gamma'),
-    (r'SUPPLIER_DELTA\s*HONG|EPICERIE\s*SUPPLIER_DELTA|EPICERIESUPPLIER_DELTAHONG', 'supplier_food', 'Supplier Delta Épicerie'),
-    (r'OWNER_BMENTS\s*JORK', 'supplier_food', 'Supplier Epsilon'),
-    (r'THAI\s*FOOD\s*MART', 'supplier_food', 'Supplier Zeta'),
-    (r'WAREHOUSE_CLUB\s*DELIVERY|WAREHOUSE_CLUB\s*ENTREPRISE|WAREHOUSE_CLUBENTREPRISE', 'supplier_food', 'Warehouse Club (Business)'),
-    (r'DISTRIBUTION\s*MA', 'supplier_food', 'Supplier Eta'),
+    # Food suppliers (handle "DAMEN SERVICE", "DAMENSERVICEALIMENTAIRE", "DAMEN ALIMENTAIRE")
+    (r'DAMEN\s*SERVICE|DAMENSERVICE|DAMEN\s*ALIMENTAIRE', 'supplier_food', 'Damen Alimentaire'),
+    (r'FERRO\s*POISSON|FERROPOISSON', 'supplier_food', 'Ferro Poisson & Fruits'),
+    (r'FRANDON', 'supplier_food', 'Frandon'),
+    (r'NEWON|MARCH[ÉE]\s*NEWON', 'supplier_food', 'Marché Newon'),
+    (r'HOUR\s*HONG|EPICERIE\s*HOUR|EPICERIEHOURHONG', 'supplier_food', 'Hour Hong Épicerie'),
+    (r'ALIMENTS\s*JORK', 'supplier_food', 'Aliments Jork'),
+    (r'THAI\s*FOOD\s*MART', 'supplier_food', 'Thai Food Mart'),
+    (r'COSTCO\s*DELIVERY|COSTCO\s*ENTREPRISE|COSTCOENTREPRISE', 'supplier_food', 'Costco (Business)'),
+    (r'DISTRIBUTION\s*MA', 'supplier_food', 'Distribution MA'),
     (r'CAN-AM|CANAM', 'supplier_food', 'Can-Am (Supplier)'),
-    (r'SUPPLIER_THETA', 'supplier_food', 'Tzanet Enterprises'),
-    (r'DELIVERECT', 'supplier_food', 'Delivery Platform'),
+    (r'TZANET', 'supplier_food', 'Tzanet Enterprises'),
+    (r'DELIVERECT', 'supplier_food', 'Deliverect'),
     (r'LA POMME ROUGE', 'supplier_food', 'La Pomme Rouge'),
-    (r'KIM PHAT', 'supplier_food', 'Asian Market (Épicerie asiatique)'),
-    (r'PRIMAVIN', 'supplier_beverage', 'Wine Distributor (Vin)'),
-    (r'BEVINCO', 'supplier_service', 'Bar Inventory Co (Inventaire bar)'),
+    (r'KIM PHAT', 'supplier_food', 'Kim Phat (Épicerie asiatique)'),
+    (r'PRIMAVIN', 'supplier_beverage', 'Primavin (Vin)'),
+    (r'BEVINCO', 'supplier_service', 'Bevinco (Inventaire bar)'),
     (r'LES MARCHANDS DIST', 'supplier_food', 'Les Marchands Distributeurs'),
-    (r'EQUIPMENT_CO FOOD', 'supplier_equipment', 'Equipment Co (Équipement cuisine)'),
-    (r'POS_VENDOR', 'software_pos', 'POS Vendor (POS)'),
-    (r'ORDERING_APP', 'supplier_food', 'Choco (Food ordering)'),
+    (r'HOBART FOOD', 'supplier_equipment', 'Hobart (Équipement cuisine)'),
+    (r'NEOPOS', 'software_pos', 'Neopos (POS)'),
+    (r'CHOCO161', 'supplier_food', 'Choco (Food ordering)'),
 
     # Beverage/alcohol (SAQ >$300 only — handled in classify function)
     (r'MOLSON|LABATT|BRASSEUR', 'supplier_beverage', 'Brasseur'),
 
     # Cleaning/linen
-    (r'LINEN_CO', 'supplier_cleaning', 'Cintas'),
-    (r'CLEANING_CO', 'supplier_cleaning', 'Ecolab'),
+    (r'CINTAS', 'supplier_cleaning', 'Cintas'),
+    (r'ECOLAB', 'supplier_cleaning', 'Ecolab'),
     (r'LOC.*LINGE.*OLYMPI|LINGES\s*OLYMPI|LOCATION\s*OLYMPI|OLYMPICMONTREAL|PANNETON.*OLY', 'supplier_cleaning', 'Location Olympique'),
     (r'BUANDERIE|NETTOYEUR', 'supplier_cleaning', 'Buanderie/Nettoyeur'),
 
@@ -75,7 +75,7 @@ BUSINESS_PATTERNS = [
     (r'VIDEOTRON', 'telecom', 'Vidéotron'),
     (r'ROGERS', 'telecom', 'Rogers'),
     (r'EMAK\s*TELECOM|EMAKTELECOM', 'telecom', 'EMAK Telecom'),
-    (r'LIGHTSPEED', 'software_pos', 'POS System (POS)'),
+    (r'LIGHTSPEED', 'software_pos', 'Lightspeed (POS)'),
     (r'OPENTABLE', 'software_reservation', 'OpenTable'),
     (r'AGENDRIX', 'software_hr', 'Agendrix'),
     (r'PERSONAFI', 'software_payroll', 'Personafi'),
@@ -167,7 +167,7 @@ CARD_FEE_PATTERNS = [
     (r'INTERETS SUR ACHATS', 'card_fee', 'Interest Charges'),
     (r'FRAIS DE CR[ÉE]DIT', 'card_fee', 'Credit Fee'),
     (r'FRAIS SOLUTIONS LIBRE', 'card_fee', 'Card Service Fee'),
-    (r'MENSUOWNER_BT[ÉE]\s*FINANCEMENT', 'card_fee', 'Card Financing Fee'),
+    (r'MENSUALIT[ÉE]\s*FINANCEMENT', 'card_fee', 'Card Financing Fee'),
     (r'FRAIS\s*INTERET|FRAIS\s*INTÉRÊT', 'card_fee', 'Interest Charges'),
     (r'PAIEMENT\s*-?\s*MERCI|PAIEMENT\s*RECU\s*MERCI', 'card_fee', 'CC Payment Received (not expense)'),
 ]
@@ -347,6 +347,6 @@ def generate_report(results: list, output_dir: str = 'output'):
 
 
 if __name__ == '__main__':
-    ralf_path = '/Users/Owner_A/Siam-Restaurants/Analytics/ralf-cc/output/master_transactions_v4_WITH_FLAGS.csv'
+    ralf_path = './data/cc_master/master_transactions.csv'
     results = process_all_cards(ralf_path)
     generate_report(results)

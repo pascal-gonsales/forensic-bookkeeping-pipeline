@@ -1,0 +1,30 @@
+# Generated artifacts
+output/
+data/
+*.csv
+*.xlsx
+*.pdf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Local-only files (private, do not ship)
+mae_sri_employees.py
+pdf_parsers.py
+generate_pdf_report.py
+session_checkpoint.json
+decisions.jsonl
+SESSION_STATE.md
+RESEARCH-*.md
+
+# Editor/OS
+.DS_Store
+.idea/
+.vscode/
+*~
+~$*
