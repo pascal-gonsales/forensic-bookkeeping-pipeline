@@ -414,6 +414,46 @@ CATEGORY_RULES = [
     (r'Ch[èe]que', 'cheque', 'Cheque'),
     (r'Achat Interac|D[ée]bit', 'purchase', 'Purchase'),
     (r'Remboursement automatique', 'auto_repayment', 'Auto Repayment'),
+
+    # Phase 3 additions — top uncategorized patterns from forensic review
+    # Visa cash advances to deposit account (74 hits, $91K)
+    (r'AVANCE DE FONDS VISA', 'cc_advance', 'CC Cash Advance'),
+    # Bank usage / credit / interest fees (71+52+19+19+17 hits)
+    (r"FRAIS D'?UTILISATION", 'bank_fees', 'Bank Fees (Usage)'),
+    (r'FRAIS DE CR[ÉE]DIT', 'bank_fees', 'Bank Fees (Credit)'),
+    (r'INT[ÉE]R[ÊE]TS\s+SUR\s+ACHATS', 'interest', 'Interest on Purchases'),
+    (r'FORFAIT DE FRAIS DE FINANCEMEN', 'loan_fees', 'Financing Fee Package'),
+    (r'^INT[ÉE]R[ÊE]TS\s*$|^INT[ÉE]R[ÊE]TS\s+\d', 'interest', 'Interest'),
+    (r'REMBOURSEMENT DES FRAIS', 'bank_refund', 'Bank Fee Refund'),
+    (r'FRAIS POUR OP[ÉE]RATIONS', 'bank_fees', 'Bank Fees (Operations)'),
+    # Pre-authorized payments (60 hits, $55K)
+    (r'PAIEMENT AUTORIS[ÉE].*PR[ÉE]L[ÈE]VEMEN', 'pre_auth_payment', 'Pre-Authorized Payment'),
+    # Marketing — Facebook ads (58 hits)
+    (r'FACEBK\s|FACEBOOK', 'marketing_ads', 'Marketing (Facebook Ads)'),
+    # AccèsD bill payments (47 hits, $34K)
+    (r'PAIEMENT FACTURE.*ACC[ÈE]SD', 'bill_payment', 'Bill Payment (AccèsD)'),
+    # Eureka & Fi Finance loan (30+12 hits, $72K)
+    (r'EUREKA\s*&?\s*FI', 'loan_eureka', 'Loan (Eureka & Fi Finance)'),
+    # Accountant / professional services (27 hits)
+    (r'PAIEMENT INTERNET.*COMPTABL', 'professional_services', 'Professional Services (Accountant)'),
+    # AMEX payments (24+14 hits — broader than existing rule)
+    (r'PAIEMENT.*AMEX\s+BANK', 'cc_payment', 'AMEX Payment'),
+    # Supa Pho supplier (21 hits)
+    (r'SUPA\s*PHO', 'supplier_food', 'Supplier (Supa Pho)'),
+    # ATM deposits at credit union (17 hits)
+    (r'D[ÉE]P[ÔO]T AU GA\b|D[ÉE]P[ÔO]T AU GAB', 'revenue_cash', 'Cash Deposit (ATM)'),
+    # Peacock supplier (10 hits)
+    (r'PEACOCK', 'supplier_food', 'Supplier (Peacock)'),
+    # Software — music licensing (10 hits)
+    (r'EPIDEMIC SOUND', 'software', 'Software (Epidemic Sound)'),
+    # Moneris terminal fees (10 hits)
+    (r'MONERIS', 'pos_fees', 'POS Fees (Moneris)'),
+    # BNI networking dues (10 hits)
+    (r'BNI-VILLEMARIE|BNI VILLEMARIE', 'business_networking', 'Business Networking (BNI)'),
+    # Dollarama supplies (10 hits)
+    (r'DOLLARAMA', 'supplier_misc', 'Supplier (Dollarama)'),
+    # Empty-description quarantine (data quality flag)
+    (r'^\s*$', 'no_description', 'No Description (Data Quality Flag)'),
 ]
 
 COMPILED_RULES = [(re.compile(p, re.IGNORECASE), cat, label) for p, cat, label in CATEGORY_RULES]
