@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
 """
-Personal Credit Card Classification — Business vs Personal vs À Vérifier.
+Personal Credit Card Classification — Business vs Personal vs Needs Review.
 
-Classifies Owner_A's personal CC transactions into:
-- BUSINESS: restaurant supplier expenses (reimbursable)
-- PERSONAL: not business-related (not reimbursable)
-- TEAM_BUILDING: partner trips/events (50% company, 50% personal — confirm with comptable)
-- VERIFY: ambiguous, needs manual review
-- CARD_FEE: credit card fees/insurance (excluded from both sides)
+Classifies the debtor's personal CC transactions into:
+- BUSINESS: restaurant supplier expenses (reimbursable, status: CONFIRMED)
+- PERSONAL: not business-related (not reimbursable, status: CONFIRMED)
+- TEAM_BUILDING: partner trips/events (status: NEEDS_REVIEW — split requires source confirmation)
+- VERIFY (legacy): ambiguous, manual triage required (status: NEEDS_REVIEW)
+- CARD_FEE: credit card fees/insurance (excluded from both sides, status: CONFIRMED)
 
-Rules:
-- Known restaurant suppliers = BUSINESS (Damen, Ferro, Newon, Costco, SAQ >$300, etc.)
-- SAQ < $300 = VERIFY (could be personal)
-- Recurring subscriptions used by restos = BUSINESS (Videotron, Lightspeed, etc.)
-- Travel with partners = TEAM_BUILDING at 50%
+Each output dict now includes a `status` field aligned to skill v1.1:
+CONFIRMED | INFERRED | NEEDS_REVIEW | BLOCKED.
+
+Rules (v1.1):
+- Known restaurant suppliers = BUSINESS (Damen, Ferro, Newon, Costco, etc.)
+- SAQ >= $300 = BUSINESS (CONFIRMED — debtor decision logged 2026-04-02)
+- SAQ < $300 = PERSONAL (CONFIRMED — debtor decision logged 2026-04-02)
+- Travel with partners = TEAM_BUILDING + status NEEDS_REVIEW (no auto-split per v1.1
+  anti-drift rule; user must supply business_amount with source citation)
 - Fitness, personal shopping = PERSONAL
-- Card fees/insurance = CARD_FEE (excluded)
+- Card fees/insurance = CARD_FEE
+- Default fallback = NEEDS_REVIEW (never auto-classified BUSINESS without rule match)
 """
 
 import csv
@@ -202,57 +207,78 @@ COMPILED_VERIFY = [(re.compile(p, re.IGNORECASE), cls, label) for p, cls, label 
 
 
 def classify_transaction(description: str, amount: float) -> dict:
-    """Classify a personal CC transaction."""
+    """Classify a personal CC transaction.
+
+    Returns a dict with 5 fields:
+      - class: BUSINESS | PERSONAL | TEAM_BUILDING | CARD_FEE | VERIFY | FLAG
+      - category: subtype label
+      - label: human-readable description
+      - business_amount: portion deductible to the business (or None if NEEDS_REVIEW)
+      - status: CONFIRMED | INFERRED | NEEDS_REVIEW | BLOCKED (skill v1.1 schema)
+
+    Anti-drift rules (v1.1):
+      - Never auto-compute split percentages without user confirmation
+      - Default fallback = NEEDS_REVIEW, never silent BUSINESS
+    """
 
     # Check RED FLAGS first
     for regex, cls, label in COMPILED_FLAG:
         if regex.search(description):
-            return {'class': cls, 'category': 'flag', 'label': label, 'business_amount': 0,
+            return {'class': cls, 'category': 'flag', 'label': label,
+                    'business_amount': None, 'status': 'NEEDS_REVIEW',
                     'note': 'RED FLAG — vérifier légitimité'}
 
     # Check card fees
     for regex, cat, label in COMPILED_CARD_FEE:
         if regex.search(description):
-            return {'class': 'CARD_FEE', 'category': cat, 'label': label, 'business_amount': 0}
+            return {'class': 'CARD_FEE', 'category': cat, 'label': label,
+                    'business_amount': 0, 'status': 'CONFIRMED'}
 
-    # Check specific VERIFY patterns (before business, to catch Apple/Uber)
+    # Check specific VERIFY patterns (before business, to catch Apple/Uber/Walmart/gas)
     for regex, cls, label in COMPILED_VERIFY:
         if regex.search(description):
             if cls == 'card_fee':
-                return {'class': 'CARD_FEE', 'category': 'card_fee', 'label': label, 'business_amount': 0}
+                return {'class': 'CARD_FEE', 'category': 'card_fee', 'label': label,
+                        'business_amount': 0, 'status': 'CONFIRMED'}
             return {'class': 'VERIFY', 'category': 'verify_specific', 'label': label,
-                    'business_amount': 0, 'note': label}
+                    'business_amount': None, 'status': 'NEEDS_REVIEW', 'note': label}
 
-    # Check team building
+    # Check team building — v1.1: NO auto-split, user must supply business_amount
     for regex, cat, label in COMPILED_TEAM:
         if regex.search(description):
             return {'class': 'TEAM_BUILDING', 'category': cat, 'label': label,
-                    'business_amount': round(amount * 0.5, 2),
-                    'note': '50% company — confirm with comptable'}
+                    'business_amount': None, 'status': 'NEEDS_REVIEW',
+                    'note': 'Split percentage requires user confirmation with source. '
+                            'Auto-50% disabled in v1.1 (anti-drift rule).'}
 
     # Check personal
     for regex, cat, label in COMPILED_PERSONAL:
         if regex.search(description):
-            return {'class': 'PERSONAL', 'category': cat, 'label': label, 'business_amount': 0}
+            return {'class': 'PERSONAL', 'category': cat, 'label': label,
+                    'business_amount': 0, 'status': 'CONFIRMED'}
 
-    # SAQ: >$300 = business, <$300 = personal (confirmed by Owner_A)
+    # SAQ rule: >=$300 = BUSINESS, <$300 = PERSONAL (CONFIRMED by debtor 2026-04-02)
     if re.search(r'SAQ', description, re.IGNORECASE):
         if amount >= 300:
-            return {'class': 'BUSINESS', 'category': 'supplier_alcohol', 'label': 'SAQ (>$300)',
-                    'business_amount': amount}
+            return {'class': 'BUSINESS', 'category': 'supplier_alcohol',
+                    'label': 'SAQ (>=$300)',
+                    'business_amount': amount, 'status': 'CONFIRMED',
+                    'note': 'Debtor decision logged 2026-04-02: SAQ >=$300 = BUSINESS'}
         else:
             return {'class': 'PERSONAL', 'category': 'personal_alcohol',
-                    'label': 'SAQ (<$300 — personnel)',
-                    'business_amount': 0}
+                    'label': 'SAQ (<$300)',
+                    'business_amount': 0, 'status': 'CONFIRMED',
+                    'note': 'Debtor decision logged 2026-04-02: SAQ <$300 = PERSONAL'}
 
-    # Check business
+    # Check business (only matched merchants; never silent BUSINESS by default)
     for regex, cat, label in COMPILED_BUSINESS:
         if regex.search(description):
-            return {'class': 'BUSINESS', 'category': cat, 'label': label, 'business_amount': amount}
+            return {'class': 'BUSINESS', 'category': cat, 'label': label,
+                    'business_amount': amount, 'status': 'CONFIRMED'}
 
-    # Default: VERIFY
-    return {'class': 'VERIFY', 'category': 'unknown', 'label': 'À VÉRIFIER',
-            'business_amount': 0}
+    # Default: NEEDS_REVIEW (never silent BUSINESS — v1.1 anti-drift rule)
+    return {'class': 'VERIFY', 'category': 'unknown', 'label': 'NEEDS_REVIEW — no rule match',
+            'business_amount': None, 'status': 'NEEDS_REVIEW'}
 
 
 def process_all_cards(ralf_path: str) -> list:
@@ -280,6 +306,7 @@ def process_all_cards(ralf_path: str) -> list:
             'category': classification['category'],
             'label': classification['label'],
             'business_amount': classification['business_amount'],
+            'status': classification.get('status', 'NEEDS_REVIEW'),
             'note': classification.get('note', ''),
             'month': r.get('mois', r.get('date', '')[:7]),
         })
@@ -296,28 +323,39 @@ def generate_report(results: list, output_dir: str = 'output'):
     with open(csv_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=[
             'date', 'card', 'description', 'amount', 'class', 'category',
-            'label', 'business_amount', 'note', 'month',
+            'label', 'business_amount', 'status', 'note', 'month',
         ])
         writer.writeheader()
         writer.writerows(results)
     print(f'Classified CSV: {csv_path}')
 
-    # Summary
-    by_class = defaultdict(lambda: {'count': 0, 'total': 0, 'business': 0})
+    # Summary — None business_amount counts as "pending user input", not 0
+    by_class = defaultdict(lambda: {'count': 0, 'total': 0, 'business': 0, 'pending': 0})
     for r in results:
         by_class[r['class']]['count'] += 1
         by_class[r['class']]['total'] += r['amount']
-        by_class[r['class']]['business'] += r['business_amount']
+        if r['business_amount'] is None:
+            by_class[r['class']]['pending'] += r['amount']
+        else:
+            by_class[r['class']]['business'] += r['business_amount']
 
     print(f'\nCLASSIFICATION SUMMARY:')
     grand_total = sum(d['total'] for d in by_class.values())
     for cls in ['BUSINESS', 'TEAM_BUILDING', 'PERSONAL', 'CARD_FEE', 'VERIFY']:
         d = by_class[cls]
         pct = d['total'] / grand_total * 100 if grand_total > 0 else 0
-        print(f'  {cls:15} {d["count"]:>5} txns  ${d["total"]:>12,.2f} ({pct:>5.1f}%)  business: ${d["business"]:>10,.2f}')
+        line = (f'  {cls:15} {d["count"]:>5} txns  ${d["total"]:>12,.2f} ({pct:>5.1f}%)'
+                f'  business: ${d["business"]:>10,.2f}')
+        if d['pending'] > 0:
+            line += f'  pending_user_input: ${d["pending"]:>10,.2f}'
+        print(line)
 
     business_total = sum(d['business'] for d in by_class.values())
-    print(f'  {"TOTAL BUSINESS":15} {"":>5}       ${business_total:>12,.2f}')
+    pending_total = sum(d['pending'] for d in by_class.values())
+    print(f'  {"TOTAL BUSINESS (CONFIRMED)":<27} ${business_total:>12,.2f}')
+    if pending_total > 0:
+        print(f'  {"TOTAL PENDING USER INPUT":<27} ${pending_total:>12,.2f}  '
+              f'(NEEDS_REVIEW — not counted in business until user confirms)')
 
     # By card
     print(f'\nBY CARD:')
@@ -325,12 +363,14 @@ def generate_report(results: list, output_dir: str = 'output'):
     for r in results:
         by_card[r['card']][r['class']]['count'] += 1
         by_card[r['card']][r['class']]['total'] += r['amount']
-        by_card[r['card']][r['class']]['business'] += r['business_amount']
+        if r['business_amount'] is not None:
+            by_card[r['card']][r['class']]['business'] += r['business_amount']
 
     for card in sorted(by_card.keys()):
         card_total = sum(d['total'] for d in by_card[card].values())
         card_biz = sum(d['business'] for d in by_card[card].values())
-        print(f'  {card}: ${card_total:,.0f} total, ${card_biz:,.0f} business ({card_biz/card_total*100:.0f}%)')
+        pct = card_biz/card_total*100 if card_total > 0 else 0
+        print(f'  {card}: ${card_total:,.0f} total, ${card_biz:,.0f} business ({pct:.0f}%)')
         for cls in ['BUSINESS', 'TEAM_BUILDING', 'PERSONAL', 'CARD_FEE', 'VERIFY']:
             d = by_card[card][cls]
             if d['count'] > 0:
