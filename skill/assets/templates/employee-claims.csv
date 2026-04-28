@@ -1,0 +1,7 @@
+id,entity,employee_id,employee_label,claim_type,amount,period_from,period_to,confidence_status,source_id,source,source_locator,notes
+1,entity-slug-1,EMP-001,A. EMP1,vacation_pay_net_window,0.00,YYYY-MM-DD,YYYY-MM-DD,NEEDS_REVIEW,SRC-PAYROLL-001,payroll-reconciliation-vN.xlsx,sheet=Vacances;row=N,
+2,entity-slug-1,EMP-001,A. EMP1,vacation_pay_6mo_plus,0.00,YYYY-MM-DD,YYYY-MM-DD,NEEDS_REVIEW,SRC-PAYROLL-001,payroll-reconciliation-vN.xlsx,sheet=Vacances;row=N,
+3,entity-slug-1,EMP-002,B. EMP2,unpaid_wages,0.00,YYYY-MM-DD,YYYY-MM-DD,NEEDS_REVIEW,SRC-PAYROLL-001,payroll-reconciliation-vN.xlsx,sheet=Wages;row=N,
+4,entity-slug-1,EMP-002,B. EMP2,final_pay_outstanding,0.00,YYYY-MM-DD,YYYY-MM-DD,NEEDS_REVIEW,SRC-PAYROLL-001,payroll-reconciliation-vN.xlsx,sheet=Final;row=N,
+5,entity-slug-2,EMP-003,C. EMP3,tips_reconciliation,0.00,YYYY-MM-DD,YYYY-MM-DD,NEEDS_REVIEW,SRC-PAYROLL-002,tips-reconciliation-vN.xlsx,sheet=Tips;row=N,
+6,entity-slug-2,EMP-004,D. EMP4,advance_overpaid,-0.00,YYYY-MM-DD,YYYY-MM-DD,NEEDS_REVIEW,SRC-PAYROLL-002,tips-reconciliation-vN.xlsx,sheet=Advances;row=N,Negative amount = employee owes the company

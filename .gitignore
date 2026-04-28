@@ -28,3 +28,7 @@ RESEARCH-*.md
 .vscode/
 *~
 ~$*
+
+# Skill template CSVs are anonymized examples (column headers + sample rows),
+# safe to commit. The blanket *.csv rule above prevents committing real bank data.
+!skill/assets/templates/*.csv

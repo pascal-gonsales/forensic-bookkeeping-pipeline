@@ -1,0 +1,11 @@
+id,debt_type,creditor_name,amount,secured,guarantor_for_entity,interest_rate,monthly_payment,confidence_status,source_id,source,source_locator,notes
+1,credit_card,Bank A,0.00,no,N/A,0.00,0.00,NEEDS_REVIEW,SRC-PERSO-001,cc-statement-YYYY-MM.pdf,page=1,Personal CC balance
+2,personal_loan,Lender A,0.00,no,N/A,0.00,0.00,NEEDS_REVIEW,SRC-PERSO-002,loan-contract-YYYY-MM-DD.pdf,page=1,
+3,personal_guarantee_corporate,Bank B,0.00,no,entity-slug-1,N/A,N/A,NEEDS_REVIEW,SRC-PERSO-003,guarantee-doc-YYYY-MM-DD.pdf,page=1,Personal guarantee for corporate debt
+4,tax_personal_federal,Canada Revenue Agency,0.00,no,N/A,0.00,N/A,NEEDS_REVIEW,SRC-PERSO-004,RC_personal_etat_YYYY-MM-DD.pdf,page=1,Personal income tax balance
+5,tax_personal_quebec,Revenu Quebec,0.00,no,N/A,0.00,N/A,NEEDS_REVIEW,SRC-PERSO-005,RQ_personal_etat_YYYY-MM-DD.pdf,page=1,Personal Quebec tax balance
+6,director_liability_RP,Canada Revenue Agency,0.00,no,entity-slug-1,N/A,N/A,NEEDS_REVIEW,SRC-TAX-001,RP_etat_compte_YYYY-MM-DD.pdf,page=2,Director liability exposure - quantum to be confirmed by trustee/counsel
+7,director_liability_RS,Revenu Quebec,0.00,no,entity-slug-1,N/A,N/A,NEEDS_REVIEW,SRC-TAX-002,RS_etat_compte_YYYY-MM-DD.pdf,page=2,Director liability exposure - quantum to be confirmed by trustee/counsel
+8,mortgage_personal,Bank C,0.00,yes,N/A,0.00,0.00,NEEDS_REVIEW,SRC-PERSO-006,mortgage-contract-YYYY-MM-DD.pdf,page=1,Secured by primary residence
+9,line_of_credit,Bank D,0.00,no,N/A,0.00,0.00,NEEDS_REVIEW,SRC-PERSO-007,loc-statement-YYYY-MM.pdf,page=1,
+10,other,Creditor Z,0.00,no,N/A,N/A,N/A,NEEDS_REVIEW,SRC-PERSO-008,doc-YYYY-MM-DD.pdf,page=1,

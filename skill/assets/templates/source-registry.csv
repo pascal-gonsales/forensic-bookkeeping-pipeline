@@ -1,0 +1,7 @@
+source_id,path,sha256,size_bytes,first_seen,last_verified,entity,domain,document_type,obtained_from,date_on_document,notes
+SRC-BANK-001,entities/entity-slug-1/bank-statements/2026-XX/statement.pdf,0000000000000000000000000000000000000000000000000000000000000000,0,YYYY-MM-DD,YYYY-MM-DD,entity-slug-1,bank,bank_statement_pdf,Bank online portal,YYYY-MM-DD,
+SRC-CC-001,entities/entity-slug-1/cc-statements/2026-XX/cc-statement.pdf,0000000000000000000000000000000000000000000000000000000000000000,0,YYYY-MM-DD,YYYY-MM-DD,entity-slug-1,cc,cc_statement_pdf,Bank online portal,YYYY-MM-DD,
+SRC-PAYROLL-001,entities/entity-slug-1/payroll/payroll-reconciliation-vN.xlsx,0000000000000000000000000000000000000000000000000000000000000000,0,YYYY-MM-DD,YYYY-MM-DD,entity-slug-1,payroll,xlsx_reconciliation,internal_export,YYYY-MM-DD,
+SRC-TAX-001,entities/entity-slug-1/tax-accounts/rp-federal/RP_etat_compte_YYYY-MM-DD.pdf,0000000000000000000000000000000000000000000000000000000000000000,0,YYYY-MM-DD,YYYY-MM-DD,entity-slug-1,tax,etat_compte_RP,CRA My Business Account,YYYY-MM-DD,
+SRC-TAX-002,entities/entity-slug-1/tax-accounts/rs-quebec/RS_etat_compte_YYYY-MM-DD.pdf,0000000000000000000000000000000000000000000000000000000000000000,0,YYYY-MM-DD,YYYY-MM-DD,entity-slug-1,tax,etat_compte_RS,Revenu Quebec ClicSEQUR,YYYY-MM-DD,
+SRC-CRED-001,entities/entity-slug-1/creditors/creditor-list-vN.xlsx,0000000000000000000000000000000000000000000000000000000000000000,0,YYYY-MM-DD,YYYY-MM-DD,entity-slug-1,creditor,xlsx_reconciliation,internal_export,YYYY-MM-DD,

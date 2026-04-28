@@ -1,0 +1,8 @@
+id,entity,list_type,creditor_name,creditor_city_province,amount,basis_of_claim,security_type,security_value,documented,confidence_status,source_id,source,source_locator,notes
+1,entity-slug-1,A_unsecured,Creditor A,City QC,0.00,invoice,N/A,N/A,yes,NEEDS_REVIEW,SRC-CRED-001,creditor-list-vN.xlsx,row=N,Unsecured trade creditor (List A)
+2,entity-slug-1,B_secured,Bank A,City QC,0.00,loan_agreement,GSA,0.00,yes,NEEDS_REVIEW,SRC-CRED-002,GSA-registration-YYYY-MM-DD.pdf,page=1,Secured creditor (List B) - GSA registered date YYYY-MM-DD
+3,entity-slug-1,C_preferred,Canada Revenue Agency,Shawinigan QC,0.00,statutory_RP,N/A,N/A,yes,NEEDS_REVIEW,SRC-TAX-001,RP_etat_compte_YYYY-MM-DD.pdf,page=2,Preferred (List C) - source deductions
+4,entity-slug-1,C_preferred,Revenu Quebec,Quebec QC,0.00,statutory_RS,N/A,N/A,yes,NEEDS_REVIEW,SRC-TAX-002,RS_etat_compte_YYYY-MM-DD.pdf,page=2,Preferred (List C) - source deductions
+5,entity-slug-1,C_preferred,CNESST,Montreal QC,0.00,statutory_workers_comp,N/A,N/A,yes,NEEDS_REVIEW,SRC-TAX-007,CNESST_cotisation_YYYY-MM-DD.pdf,page=1,Preferred (List C)
+6,entity-slug-1,C_preferred,Employees (aggregated),N/A,0.00,wages_owed,N/A,N/A,yes,NEEDS_REVIEW,SRC-PAYROLL-001,employee-claims.csv,row=all,Wages/vacation owed (List C) - links to employee-claims.csv
+7,entity-slug-1,D_contingent,Guarantor X,City,0.00,personal_guarantee,N/A,N/A,yes,NEEDS_REVIEW,SRC-CRED-003,guarantee-agreement-YYYY-MM-DD.pdf,page=1,Contingent (List D)

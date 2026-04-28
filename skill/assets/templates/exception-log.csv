@@ -1,0 +1,5 @@
+id,priority,entity,domain,description,discovered_date,amount,confidence_status,resolution_status,source_id,source,source_locator,resolution_date,resolution_notes
+1,P0,entity-slug-1,das,RP federal état de compte missing - blocks DAS reconciliation,2026-04-27,,BLOCKED,OPEN,none,,,,
+2,P1,entity-slug-2,creditors,Anonymous transfer detected - needs counterparty identification,2026-04-27,1234.56,NEEDS_REVIEW,OPEN,SRC-BANK-007,bank-statement-2026-XX.pdf,page=3,,
+3,P2,global,intercompany,Period 1 entity assignment requires supplier invoices,2026-04-27,,BLOCKED,OPEN,none,,,,
+4,P1,entity-slug-1,payroll,Tip allocation discrepancy between Nethris export and POS export,2026-04-27,234.10,NEEDS_REVIEW,OPEN,SRC-PAYROLL-003,nethris-export-period-N.csv,row=145,,

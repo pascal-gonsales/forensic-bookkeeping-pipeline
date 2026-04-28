@@ -1,0 +1,8 @@
+id,entity,program,period_year,period_unit,deductions_collected,deductions_remitted,balance_owed,penalty,interest,confidence_status,source_id,source,source_locator,notes
+1,entity-slug-1,RP_federal,YYYY,Q4,0.00,0.00,0.00,0.00,0.00,NEEDS_REVIEW,SRC-TAX-001,RP_etat_compte_YYYY-MM-DD.pdf,page=2,
+2,entity-slug-1,RS_quebec,YYYY,Q4,0.00,0.00,0.00,0.00,0.00,NEEDS_REVIEW,SRC-TAX-002,RS_etat_compte_YYYY-MM-DD.pdf,page=2,
+3,entity-slug-1,TVQ,YYYY,Q4,0.00,0.00,0.00,0.00,0.00,NEEDS_REVIEW,SRC-TAX-003,TVQ_etat_compte_YYYY-MM-DD.pdf,page=1,
+4,entity-slug-1,GST_HST,YYYY,Q4,0.00,0.00,0.00,0.00,0.00,NEEDS_REVIEW,SRC-TAX-004,GST_etat_compte_YYYY-MM-DD.pdf,page=1,
+5,entity-slug-1,T2_corporate,YYYY,annual,N/A,N/A,0.00,0.00,0.00,NEEDS_REVIEW,SRC-TAX-005,T2_assessment_YYYY-MM-DD.pdf,page=1,Federal corporate income tax
+6,entity-slug-1,CO_17_quebec,YYYY,annual,N/A,N/A,0.00,0.00,0.00,NEEDS_REVIEW,SRC-TAX-006,CO17_assessment_YYYY-MM-DD.pdf,page=1,Quebec corporate income tax
+7,entity-slug-1,CNESST,YYYY,annual,0.00,0.00,0.00,0.00,0.00,NEEDS_REVIEW,SRC-TAX-007,CNESST_cotisation_YYYY-MM-DD.pdf,page=1,Workers compensation
