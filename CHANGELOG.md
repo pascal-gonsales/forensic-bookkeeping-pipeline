@@ -1,5 +1,58 @@
 # Changelog
 
+## [v1.2.0] — 2026-04-28 (Skill v1.2 published + anonymization fix + scripts hardening)
+
+Two changes ship in this release:
+
+### 1. Forensic-bookkeeping Skill v1.2 published into this repo (`/skill/`)
+
+The skill is the meta-instructions for how Claude operates this pipeline. It was
+previously local-only at `~/.claude/skills/forensic-bookkeeping/` (Claude Code
+skills directory). It is now public alongside the pipeline so any reader can see
+the operating contract: anti-drift rules, source-traceability requirements,
+NEEDS_REVIEW default, routing boundaries, and the per-entity STATUS architecture.
+
+- `skill/SKILL.md` — main skill definition (anti-drift, anonymity, hard rules)
+- `skill/references/` — 6 deep-dive guides (architecture, confidence/sourcing,
+  output schemas, pipeline-technical, routing-boundaries, workflow-checklists)
+- `skill/assets/templates/` — 10 working templates (STATUS, FORENSIC_STATUS,
+  STANDUP, creditor schedule, employee claims, DAS schedule, source registry,
+  trustee briefing, decision-entry jsonl, etc.)
+
+Legacy v3.2 reference files (`legacy/` in the local skill dir) are intentionally
+NOT included — they retain real names from the original case and are not the
+v1.2 entry point.
+
+### 2. Anonymization fix — `pipeline.py` trustee name no longer hard-coded
+
+`pipeline.py` previously had a hardcoded trustee name in `CATEGORY_RULES` (a
+debtor-specific identifier from the original case). v1.2 replaces it with an
+optional `TRUSTEE_NAME` env-var pattern:
+
+- OSS distribution default: no trustee-name rule registered (still catches
+  generic "trustee|syndic" mentions via the standing rule).
+- Local working copy: set `TRUSTEE_NAME=<name>` in `~/.config/wwithai/credentials.env`
+  or shell env to register a debtor-specific rule at runtime.
+
+This aligns the pipeline with the skill v1.2 anonymity contract: "must not name
+any specific person, firm, or restaurant" in shared distribution.
+
+### 3. Scripts hardening (continuation of v1.1.0 anti-drift work)
+
+- `scripts/source_registry.py` — incremental hardening (validation, error paths)
+- `scripts/validate_package.py` — strict/handoff modes, broader template/package
+  validation, integration with v1.2 confidence-status conventions
+- `tests/synthetic/` — synthetic-data test cases for validation gate (no real
+  bank statements, safe to run on any clone)
+
+### Migration note for existing users
+
+Set `TRUSTEE_NAME` in your local env if you were relying on the hardcoded rule.
+Without it, generic "trustee" / "syndic" strings still match — only the named
+fallback rule is gone.
+
+---
+
 ## [v1.1.0] — 2026-04-26 (Anti-drift hardening + standardized statuses)
 
 Response to external code audit. Aligns the pipeline with the v1.1 forensic-bookkeeping

@@ -8,6 +8,7 @@ which column each amount belongs to. Debit vs credit is DETERMINISTIC
 Expected accuracy: 98%+ vs 85% with text-based approach.
 """
 
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,6 +20,17 @@ from parsers import (
     ParseResult, Transaction, ValidationResult,
     _guess_entity_from_path,
 )
+
+# Optional debtor-specific PDF row-skip strings (cardholder names, address
+# fragments). Comma-separated in env var. Public OSS distribution leaves it
+# unset; local working copy sets it in ~/.config/wwithai/credentials.env.
+# These are matched case-insensitively against extracted PDF row text to skip
+# header/metadata rows that appear above transaction tables.
+_CARDHOLDER_SKIP_STRINGS = [
+    s.strip().upper()
+    for s in os.environ.get('CARDHOLDER_SKIP_STRINGS', '').split(',')
+    if s.strip()
+]
 
 # ---------------------------------------------------------------------------
 # French month mapping
@@ -785,16 +797,17 @@ def parse_desjardins_cc_pdf_v2(file_path: str) -> ParseResult:
 
                     # Skip header/metadata lines
                     full_text = ' '.join(w['text'] for w in row_sorted).strip()
-                    if any(skip in full_text.upper() for skip in [
+                    _generic_skip_business_cc = [
                         'AFFAIRES', 'MARGE DE CREDIT', 'RELEVÉ', 'DATE DU',
                         'DESCRIPTION DES TRANSACTIONS', 'DATE DE TRANSACTION',
                         'NUMÉRO DE', 'OPÉRATIONS AU COMPTE', 'PROGRAMME',
                         'VOLUME', 'REMISE', 'NOUVEAU SOLDE', 'PAIEMENT DÛ',
                         'PAIEMENT MINIMUM', 'ATTENTION', 'LE MONTANT',
                         'SERA APPLIQUÉ', 'AUTOMATIQUEMENT', 'PAGE',
-                        'QUÉBEC INC', 'OWNER_A', 'STREET_FRAGMENT',
-                        'NEIGHBORHOOD', 'SOLDE COURANT', 'REDRESSEMENT',
-                    ]):
+                        'QUÉBEC INC', 'OWNER_A',
+                        'SOLDE COURANT', 'REDRESSEMENT',
+                    ]
+                    if any(skip in full_text.upper() for skip in _generic_skip_business_cc + _CARDHOLDER_SKIP_STRINGS):
                         continue
 
                     # Transaction line detection:
@@ -1436,7 +1449,10 @@ def parse_desjardins_visa_perso_pdf_v2(file_path: str) -> ParseResult:
     Same as business CC but with BONIDOLLARS column (x=429-473).
     Description at x=220-413 (wider than business x=273-465).
     Amount at x=474-532.
-    May have multiple card sections (OWNER_A + SIAM OWNER_LASTNAME).
+    May have multiple card-holder sections; debtor-specific cardholder names
+    and address fragments come from CARDHOLDER_SKIP_STRINGS env var
+    (comma-separated, see module-level _CARDHOLDER_SKIP_STRINGS) so the OSS
+    code carries no real names.
     """
     warnings = []
     transactions = []
@@ -1477,18 +1493,21 @@ def parse_desjardins_visa_perso_pdf_v2(file_path: str) -> ParseResult:
                     row_sorted = sorted(row_words, key=lambda w: w['x0'])
                     full_text = ' '.join(w['text'] for w in row_sorted).strip()
 
-                    # Skip headers/metadata
-                    if any(skip in full_text.upper() for skip in [
+                    # Skip headers/metadata. Generic Desjardins Visa terms +
+                    # the placeholder OWNER_A + any debtor-specific cardholder
+                    # names/address fragments registered via env var.
+                    _generic_skip = [
                         'DESJARDINS VISA', 'DATE DU RELEVÉ', 'PAGE',
                         'TRANSACTIONS EFFECTUÉES', 'CARTE :', 'DATE DE TRANSACTION',
                         "DATE  D'INSCRIPTION", 'DESCRIPTION', 'MONTANT',
                         'BONIDOLLARS', 'SOMMAIRE', 'ESTIMATION',
                         'PAIEMENT MINIMUM', 'LIMITE DE CRÉDIT',
-                        "TAUX D'INTÉRÊT", 'OWNER_A', 'SIAM OWNER_LASTNAME',
-                        'STREET_FRAGMENT', 'NEIGHBORHOOD QC', 'NUMÉRO DE COMPTE',
+                        "TAUX D'INTÉRÊT", 'OWNER_A',
+                        'NUMÉRO DE COMPTE',
                         'RELEVÉ DE COMPTE', 'RENSEIGNEMENTS',
                         'DÉTAILS À LA SECTION',
-                    ]):
+                    ]
+                    if any(skip in full_text.upper() for skip in _generic_skip + _CARDHOLDER_SKIP_STRINGS):
                         continue
 
                     # Transaction: dates at x<200, description at x=220-413, amount at x>470

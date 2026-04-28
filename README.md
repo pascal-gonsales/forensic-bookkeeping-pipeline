@@ -1,8 +1,10 @@
-# Forensic Bookkeeping Pipeline
+# Forensic Bookkeeping Pipeline + Skill (v1.2)
 
 A production-grade forensic accounting system that processes 13,000+ bank transactions across 5 interlinked business entities, reconciles inter-company transfers, and classifies personal credit card expenses.
 
 Built to handle real-world complexity: multi-format bank statements (CSV + PDF), French/English bilingual documents, Quebec tax law (GST 5% + QST 9.975%), and corporate group structures with shareholder advances.
+
+> **This repo ships two things:** (1) the **Python pipeline** (root) — production-tested forensic engine; (2) the **Claude Skill v1.2** at [`/skill/`](skill/) — anti-drift operating contract that turns the pipeline into a trustee-defensible workflow when used with Claude Code. Both anonymized, both reusable across debtors.
 
 ## What It Does
 
@@ -25,7 +27,29 @@ pdf_parsers_v2.py     Coordinate-based PDF extraction (debit/credit by x-positio
 cc_classification.py  Business vs personal expense classification (105+ rules)
 reconciliation.py     Bidirectional inter-company transfer matching
 test_parsers.py       Test suite (smoke + per-format integration tests with skip-if-fixture-missing)
+scripts/
+  source_registry.py  Catalogue source documents with SHA256 + verification metadata
+  validate_package.py Pre-flight validator before trustee handoff (template/package/strict/handoff modes)
+tests/synthetic/      Synthetic-data tests (no real bank statements; safe on any clone)
+skill/                Forensic-bookkeeping Skill v1.2 (Claude operating contract)
+  SKILL.md              main definition: anti-drift rules, anonymity, hard rules, cold-start protocol
+  references/           6 deep-dive guides: architecture, sourcing, output schemas, routing, workflows
+  assets/templates/     10 working templates: STATUS, FORENSIC_STATUS, STANDUP, creditor schedule,
+                        employee claims, DAS schedule, source registry, trustee briefing, decisions JSONL
 ```
+
+## Forensic Skill v1.2 — operating contract
+
+The pipeline alone is just code; the skill is what makes it **trustee-defensible**. When used with Claude Code, the skill enforces:
+
+- **Source traceability** — every number must cite source file + row/page/sheet/entry id; if uncitable, status is `unverified` and Claude stops (no rounding, no interpolation, no "reasonable estimate")
+- **`NEEDS_REVIEW` by default** — values escalate to `CONFIRMED` only with source document on file AND user confirmation
+- **No invented insolvency facts** — amounts, creditors, employee balances, tax balances, dates, classifications. If missing, write `BLOCKED` and a fetch-next entry
+- **Routing on legal/tax/strategic questions** — Claude routes to trustee, accountant, or qualified counsel; never freelances on BIA / ITA / LAF / CCQ / LACC / Loi sur les normes du travail
+- **Cold-start + end-of-session protocols** — every session reads STANDUP → FORENSIC_STATUS → decisions.jsonl tail → entity STATUS, and ends by rewriting STATUS, FORENSIC_STATUS, appending SESSION_LOG and decisions.jsonl
+- **Anonymity rule** — the skill itself contains zero real names; debtor-specific identifiers (e.g. trustee name) come from runtime env vars (`TRUSTEE_NAME`)
+
+See [`skill/SKILL.md`](skill/SKILL.md) for the full v1.2 contract and [`skill/references/`](skill/references/) for the 6 detailed guides.
 
 ## Key Technical Decisions
 
@@ -72,6 +96,8 @@ Forensic transparency: the following gaps are documented rather than estimated.
 ## Note on anonymization
 
 All entity names, account numbers, supplier names, and personal identifiers have been anonymized. The code structure, algorithms, and methodology are preserved exactly as used in production. The anonymization mapping is consistent across all files (e.g. `Owner_A`, `Restaurant_A` style placeholders).
+
+**Debtor-specific configuration via env vars** (v1.2): the trustee name is read from `TRUSTEE_NAME` env var at runtime. Public OSS distribution leaves it unset. Local working copies set it in `~/.config/wwithai/credentials.env` or shell env to register a debtor-specific categorization rule. The generic `trustee|syndic` regex still catches generic mentions in either configuration.
 
 ## License
 

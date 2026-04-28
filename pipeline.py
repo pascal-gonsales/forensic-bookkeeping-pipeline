@@ -15,6 +15,7 @@ GUARD RAILS:
 
 import csv
 import json
+import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -23,6 +24,13 @@ from pathlib import Path
 from typing import Optional
 
 from parsers import parse_file, ParseResult, Transaction
+
+# Optional debtor-specific trustee name. Set TRUSTEE_NAME in shell env or local
+# .env when running against a real case. Public OSS distribution intentionally
+# has no trustee names hard-coded (per forensic-bookkeeping skill v1.2
+# anonymity rule). When unset, no trustee-name rule is registered — the generic
+# 'trustee|syndic' regex still catches generic trustee references.
+_TRUSTEE_NAME = os.environ.get('TRUSTEE_NAME', '').strip()
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -373,7 +381,8 @@ CATEGORY_RULES = [
 
     # Trustee / Legal
     (r'trustee|syndic', 'trustee', 'Trustee Payment'),
-    (r'TRUSTEE_FIRSTNAME TRUSTEE_LASTNAME', 'trustee', 'Trustee (TRUSTEE_FIRSTNAME TRUSTEE_LASTNAME)'),
+    # Debtor-specific trustee name appended below from TRUSTEE_NAME env var.
+    # No real names hard-coded in OSS source per skill v1.2 anonymity rule.
 
     # Amex CC payment received (credit on Amex statement)
     (r'PAIEMENT RE[ÇC]U.*MERCI', 'cc_payment_received', 'Amex Payment Received'),
@@ -455,6 +464,13 @@ CATEGORY_RULES = [
     # Empty-description quarantine (data quality flag)
     (r'^\s*$', 'no_description', 'No Description (Data Quality Flag)'),
 ]
+
+# Optionally append a debtor-specific trustee name rule from env var.
+# Local working copy sets TRUSTEE_NAME; OSS distribution leaves it unset.
+if _TRUSTEE_NAME:
+    CATEGORY_RULES.append(
+        (re.escape(_TRUSTEE_NAME), 'trustee', f'Trustee ({_TRUSTEE_NAME})')
+    )
 
 COMPILED_RULES = [(re.compile(p, re.IGNORECASE), cat, label) for p, cat, label in CATEGORY_RULES]
 
