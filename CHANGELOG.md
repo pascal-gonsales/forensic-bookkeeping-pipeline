@@ -15,7 +15,7 @@ NEEDS_REVIEW default, routing boundaries, and the per-entity STATUS architecture
 - `skill/SKILL.md` — main skill definition (anti-drift, anonymity, hard rules)
 - `skill/references/` — 6 deep-dive guides (architecture, confidence/sourcing,
   output schemas, pipeline-technical, routing-boundaries, workflow-checklists)
-- `skill/assets/templates/` — 10 working templates (STATUS, FORENSIC_STATUS,
+- `skill/assets/templates/` — 11 working templates (STATUS, FORENSIC_STATUS,
   STANDUP, creditor schedule, employee claims, DAS schedule, source registry,
   trustee briefing, decision-entry jsonl, etc.)
 

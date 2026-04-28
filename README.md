@@ -4,7 +4,7 @@ A production-grade forensic accounting system that processes 13,000+ bank transa
 
 Built to handle real-world complexity: multi-format bank statements (CSV + PDF), French/English bilingual documents, Quebec tax law (GST 5% + QST 9.975%), and corporate group structures with shareholder advances.
 
-> **This repo ships two things:** (1) the **Python pipeline** (root) — production-tested forensic engine; (2) the **Claude Skill v1.2** at [`/skill/`](skill/) — anti-drift operating contract that turns the pipeline into a trustee-defensible workflow when used with Claude Code. Both anonymized, both reusable across debtors.
+> **This repo ships two things:** (1) the **Python pipeline** (root) — forensic engine tested on real restaurant data; (2) the **Claude Skill v1.2** at [`/skill/`](skill/) — anti-drift operating contract that adds source-traceability and audit discipline when used with Claude Code. Both reusable across debtors via env-driven configuration.
 
 ## What It Does
 
@@ -34,13 +34,14 @@ tests/synthetic/      Synthetic-data tests (no real bank statements; safe on any
 skill/                Forensic-bookkeeping Skill v1.2 (Claude operating contract)
   SKILL.md              main definition: anti-drift rules, anonymity, hard rules, cold-start protocol
   references/           6 deep-dive guides: architecture, sourcing, output schemas, routing, workflows
-  assets/templates/     10 working templates: STATUS, FORENSIC_STATUS, STANDUP, creditor schedule,
-                        employee claims, DAS schedule, source registry, trustee briefing, decisions JSONL
+  assets/templates/     11 working templates: STATUS, FORENSIC_STATUS, STANDUP, creditor-schedule,
+                        employee-claims, das-tax-schedule, source-registry, exception-log,
+                        personal-debt-schedule, trustee-briefing, decision-entry JSONL
 ```
 
 ## Forensic Skill v1.2 — operating contract
 
-The pipeline alone is just code; the skill is what makes it **trustee-defensible**. When used with Claude Code, the skill enforces:
+The pipeline alone is just code; the skill is what enforces **source-traceability and audit discipline**. When used with Claude Code, the skill enforces:
 
 - **Source traceability** — every number must cite source file + row/page/sheet/entry id; if uncitable, status is `unverified` and Claude stops (no rounding, no interpolation, no "reasonable estimate")
 - **`NEEDS_REVIEW` by default** — values escalate to `CONFIRMED` only with source document on file AND user confirmation
@@ -88,16 +89,25 @@ Python 3.11+ | pdfplumber | csv | dataclasses | pathlib
 Forensic transparency: the following gaps are documented rather than estimated.
 
 - **June 2024 RBC statement permanently missing** for one entity (RBC archive limit exceeded). The pipeline's hidden-transaction detector catches the gap automatically; the value is left blank rather than interpolated.
-- **August-December 2025 entity assignment** for centralized expenses requires invoice data from suppliers (SUPPLIER_A, SUPPLIER_B, SUPPLIER_D) that has not yet been received. The pipeline ingests the transactions but flags the entity column as `unassigned`.
+- **August-December 2025 entity assignment** for centralized expenses requires invoice data from suppliers (specific named suppliers) that has not yet been received. The pipeline ingests the transactions but flags the entity column as `unassigned`.
 - **199 mixed-use CC transactions** ($7K) sit in the `VERIFY` queue by design. These are merchants where business vs. personal cannot be determined from the description alone (Apple, UberEats, Walmart, gas stations). Manual review is the intended path.
 - **331 transactions have no description** in the source (~$775K). They are quarantined under the `no_description` category — visible to the reviewer, never silently rolled into other buckets.
 - **CI fixture absence**: the integration tests for CSV/PDF parsers depend on private bank-statement fixtures and skip cleanly on a fresh clone. Only the import smoke test runs in CI. Local validation is the canonical signal.
 
 ## Note on anonymization
 
-All entity names, account numbers, supplier names, and personal identifiers have been anonymized. The code structure, algorithms, and methodology are preserved exactly as used in production. The anonymization mapping is consistent across all files (e.g. `Owner_A`, `Restaurant_A` style placeholders).
+This OSS distribution is anonymized. Specifically:
 
-**Debtor-specific configuration via env vars** (v1.2): the trustee name is read from `TRUSTEE_NAME` env var at runtime. Public OSS distribution leaves it unset. Local working copies set it in `~/.config/wwithai/credentials.env` or shell env to register a debtor-specific categorization rule. The generic `trustee|syndic` regex still catches generic mentions in either configuration.
+- **Entities + accounts:** real entity names and account numbers replaced with `Owner_A`, `Siam House`, `Lotus Kitchen`, `Garden Bistro`, `Vine Room`, `Siam Holdings Inc` style placeholders. The mapping is consistent across all active files.
+- **Trustee name:** sourced from `TRUSTEE_NAME` env var at runtime. OSS leaves it unset. Local working copies set it in `~/.config/wwithai/credentials.env` to register a debtor-specific categorization rule. Generic `trustee|syndic` regex still catches generic mentions either way.
+- **Cardholder name + address fragments** (PDF row-skip patterns): sourced from `CARDHOLDER_SKIP_STRINGS` env var. OSS leaves it unset.
+- **Path-based entity hints:** sourced from `ENTITY_PATTERNS_JSON` env var. OSS leaves it unset; path-guess returns generic.
+- **Credit-card classification rules:** generic Canadian/global brand patterns ship in OSS (Costco, Cintas, Lightspeed, etc.). Debtor-specific small-supplier rules load via `CC_BUSINESS_RULES_JSON`, `CC_PERSONAL_RULES_JSON`, `CC_VERIFY_RULES_JSON`, `CC_TEAM_BUILDING_RULES_JSON`, `CC_FLAG_RULES_JSON` env vars.
+- **Test fixtures:** integration test paths sourced from `PARSER_TEST_FIXTURE_*` env vars. OSS skips integration tests if env vars are unset.
+
+The `legacy/` subfolder is intentionally NOT anonymized — it preserves the v3.2 working files for historical reference and is not the v1.2 entry point.
+
+**Code structure, algorithms, methodology are preserved exactly as used in production.** Anyone running this against their own debtor data will see the same behavior with their own env-var configuration.
 
 ## License
 

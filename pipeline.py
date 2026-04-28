@@ -347,8 +347,8 @@ CATEGORY_RULES = [
     # Owner_B Holding (shareholder advance)
     (r'Owner_B\s*Holding', 'ali_advance', 'Owner_B Holding (Shareholder Advance)'),
 
-    # SUPPLIER_G (food supplier)
-    (r'SUPPLIER_G', 'supplier_food', 'Supplier (SUPPLIER_G)'),
+    # (Debtor-specific named food-supplier rule lives in private rules JSON,
+    # loaded via SUPPLIER_RULES_JSON env var when present.)
 
     # Loans & leases
     (r'VERSEMENT PRET|Versement sur pr[êe]t', 'loan', 'Loan Payment'),
@@ -367,7 +367,7 @@ CATEGORY_RULES = [
 
     # Suppliers (restaurant-specific)
     (r'Brasseurs|Molson|Labatt', 'supplier_beverage', 'Supplier (Beverage)'),
-    (r'SUPPLIER_A|SUPPLIER_B|SUPPLIER_C|march[ée]', 'supplier_food', 'Supplier (Food)'),
+    (r'<SUPPLIER_FOOD_PATTERN>|march[ée]', 'supplier_food', 'Supplier (Food)'),
     (r'ECOLAB|Cintas', 'supplier_cleaning', 'Supplier (Cleaning/Linen)'),
     (r'Sysco|GFS|Gordon Food', 'supplier_food', 'Supplier (Food Distributor)'),
     (r'SAQ\d', 'supplier_alcohol', 'Supplier (SAQ)'),
@@ -415,8 +415,8 @@ CATEGORY_RULES = [
     # Virement par Banque en direct (external bank transfer)
     (r'Virement par Banque en direct', 'transfer_bank_direct', 'Direct Bank Transfer'),
 
-    # SUPPLIER_T (payroll/HR related)
-    (r'SUPPLIER_T', 'software_payroll', 'Software (SUPPLIER_T Payroll)'),
+    # Generic payroll/HR vendors — debtor-specific named rules in private JSON.
+    (r'PAYROLL', 'software_payroll', 'Payroll Software (generic)'),
 
     # Other
     (r'Retrait GAB', 'cash_withdrawal', 'Cash Withdrawal (ATM)'),

@@ -7,7 +7,7 @@
 ## 1. SESSION STATE MANAGEMENT
 
 ### The Problem You Already Hit
-The BOOKKEEPER-CC project lost state between sessions. 1,347 transactions processed, $409K still unclassified, and the next session had no way to pick up where it left off. The forensic-bookkeeping project is better (SESSION_STATE.md exists), but it's manually maintained and drifts from reality.
+The the CC reconciliation project lost state between sessions. 1,347 transactions processed, $409K still unclassified, and the next session had no way to pick up where it left off. The forensic-bookkeeping project is better (SESSION_STATE.md exists), but it's manually maintained and drifts from reality.
 
 ### Recommended Format: Markdown + JSON Sidecar
 
@@ -73,7 +73,7 @@ Each month's Excel produces:
 - Matched transactions (CC statement row linked to Excel row)
 - Unmatched from CC (on statement, not in Excel — potential unreported expenses)
 - Unmatched from Excel (in Excel, not on statement — potential fabrication)
-- Rules learned (e.g., "SUPPLIER_ALPHASERVICEOWNER_BM" = "SUPPLIER_A" in Excel)
+- Rules learned (e.g., "<MERCHANT_STRING>" = "<Supplier_A>" in Excel)
 
 ### The Graduated Processing Model
 
@@ -98,7 +98,7 @@ This is the key insight: rules learned in January apply to February. The checkpo
   "rules": [
     {
       "id": "rule_001",
-      "pattern": "SUPPLIER_ALPHASERVICEOWNER_BM",
+      "pattern": "<MERCHANT_STRING>",
       "maps_to": "Supplier Alpha",
       "classification": "BUSINESS",
       "subcategory": "supplier_food",
@@ -109,8 +109,8 @@ This is the key insight: rules learned in January apply to February. The checkpo
     },
     {
       "id": "rule_002",
-      "pattern": "SUPPLIER_I",
-      "maps_to": "SUPPLIER_I (Exterminateur)",
+      "pattern": "<EXAMPLE_SUPPLIER>",
+      "maps_to": "<example_supplier> (Exterminateur)",
       "classification": "BUSINESS",
       "subcategory": "supplier_service",
       "source": "Owner_A verbal confirmation",
@@ -161,7 +161,7 @@ Key: unmatched items from January might get resolved when February's data reveal
 ## 3. DECISION LOG
 
 ### The Problem
-You told Claude that "SUPPLIER_I = exterminateur = business" in one session. Next session, Claude asks again. This wastes your time and erodes trust.
+You told Claude that "<example_supplier> = exterminateur = business" in one session. Next session, Claude asks again. This wastes your time and erodes trust.
 
 ### Implementation: decisions.jsonl (Append-Only Log)
 
@@ -172,9 +172,9 @@ Use JSON Lines format (one JSON object per line, append-only). This is the forma
 - Git-friendly (each new decision is a clean diff line)
 
 ```jsonl
-{"id":"d001","timestamp":"2026-03-31T09:15:00","question":"What is SUPPLIER_I?","answer":"Exterminateur — business expense, supplier_service","context":"CC classification session, Owner_A confirmed verbally","category":"classification_rule","reversible":true}
+{"id":"d001","timestamp":"2026-03-31T09:15:00","question":"What is <example_supplier>?","answer":"Exterminateur — business expense, supplier_service","context":"CC classification session, Owner_A confirmed verbally","category":"classification_rule","reversible":true}
 {"id":"d002","timestamp":"2026-03-31T09:20:00","question":"SAQ purchases under $300 — business or personal?","answer":"VERIFY — could be either. Flag for manual review.","context":"SAQ threshold discussion. Over $300 is definitely business (restaurant stock).","category":"classification_threshold","reversible":true}
-{"id":"d003","timestamp":"2026-03-31T09:45:00","question":"How to handle Warehouse Club split between Lotus Kitchen and Siam House?","answer":"If single CC charge split across entities in BOOKKEEPER's Excel, match CC charge to the SUM of Excel rows. Track both entity assignments.","context":"Split transaction pattern found in January data","category":"reconciliation_method","reversible":true}
+{"id":"d003","timestamp":"2026-03-31T09:45:00","question":"How to handle Warehouse Club split between Lotus Kitchen and Siam House?","answer":"If single CC charge split across entities in the bookkeeper's Excel, match CC charge to the SUM of Excel rows. Track both entity assignments.","context":"Split transaction pattern found in January data","category":"reconciliation_method","reversible":true}
 ```
 
 ### Loading Decisions Into Session Context
@@ -183,7 +183,7 @@ At session start, the skill or SESSION_STATE.md should include:
 
 ```markdown
 ## Decisions Made (do not re-ask)
-- SUPPLIER_I = exterminateur = BUSINESS (d001, 2026-03-31)
+- <example_supplier> = exterminateur = BUSINESS (d001, 2026-03-31)
 - SAQ < $300 = VERIFY, SAQ >= $300 = BUSINESS (d002, 2026-03-31)
 - Warehouse Club splits: match CC to SUM of Excel rows (d003, 2026-03-31)
 - [... max 20 most recent/relevant decisions ...]
@@ -252,7 +252,7 @@ Layer 3: SESSION STATE (work in progress — ephemeral)
 | Account 0011001 = Lotus Kitchen | Skill | Permanent fact, used every run |
 | "Never trust filenames" | Memory (feedback) | Behavioral rule, applies beyond this project |
 | "Processed Jan-Mar, pending Apr-Jul" | Session State | Changes every session |
-| "SUPPLIER_I = exterminateur" | Session State (decisions.jsonl) + Skill (once confirmed) | Starts as decision, graduates to rule |
+| "<example_supplier> = exterminateur" | Session State (decisions.jsonl) + Skill (once confirmed) | Starts as decision, graduates to rule |
 | "13,081 total transactions" | Skill + Session State | Skill has the stable total, session state has current run's total |
 | "RBC PDF parser bug: FORFAIT" | Skill (critical bugs section) | Must never regress — needs permanent visibility |
 | Python venv path | Skill (context.json) | Infrastructure, rarely changes |
@@ -263,7 +263,7 @@ Layer 3: SESSION STATE (work in progress — ephemeral)
 Information flows upward as it stabilizes:
 
 ```
-Session observation → "SUPPLIER_ALPHASERVICEOWNER_BM matches SUPPLIER_A in Excel"
+Session observation → "<MERCHANT_STRING> matches <Supplier_A> in Excel"
     ↓ (confirmed by Owner_A)
 Decision log entry → decisions.jsonl, d001
     ↓ (used successfully across 3+ files)
@@ -359,13 +359,13 @@ print('Canary passed')
   "phase": "cc_reconciliation",
   "timestamp": null,
   "source_files": {
-    "ralf_cc_january.xlsx": { "status": "pending", "hash": null },
-    "ralf_cc_february.xlsx": { "status": "pending", "hash": null },
-    "ralf_cc_march.xlsx": { "status": "pending", "hash": null },
-    "ralf_cc_april.xlsx": { "status": "pending", "hash": null },
-    "ralf_cc_may.xlsx": { "status": "pending", "hash": null },
-    "ralf_cc_june.xlsx": { "status": "pending", "hash": null },
-    "ralf_cc_july.xlsx": { "status": "pending", "hash": null }
+    "cc_reconciliation_january.xlsx": { "status": "pending", "hash": null },
+    "cc_reconciliation_february.xlsx": { "status": "pending", "hash": null },
+    "cc_reconciliation_march.xlsx": { "status": "pending", "hash": null },
+    "cc_reconciliation_april.xlsx": { "status": "pending", "hash": null },
+    "cc_reconciliation_may.xlsx": { "status": "pending", "hash": null },
+    "cc_reconciliation_june.xlsx": { "status": "pending", "hash": null },
+    "cc_reconciliation_july.xlsx": { "status": "pending", "hash": null }
   },
   "rules": [],
   "decisions": [],
@@ -430,7 +430,7 @@ print('Canary passed')
 
 2. **Monolithic state file**: A single 500-line SESSION_STATE.md becomes unreadable. Split: human summary (SESSION_STATE.md) + machine state (session_checkpoint.json) + decisions (decisions.jsonl).
 
-3. **Re-asking confirmed decisions**: If Owner_A said "SUPPLIER_I = exterminateur" once, that's a permanent rule. Load decisions.jsonl and check before asking anything.
+3. **Re-asking confirmed decisions**: If Owner_A said "<example_supplier> = exterminateur" once, that's a permanent rule. Load decisions.jsonl and check before asking anything.
 
 4. **Processing files out of order**: Rules propagate January to July. If you process April before February, February can't benefit from April's rules. Always process sequentially for the first pass.
 

@@ -12,5 +12,7 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install pdfplumber
-      - name: Run test suite
+      - name: Run parser smoke test
         run: python test_parsers.py
+      - name: Run synthetic safety tests (no fixtures needed)
+        run: python tests/synthetic/test_validator_safety.py

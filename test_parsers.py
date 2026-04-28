@@ -3,19 +3,21 @@
 Test parsers on exactly 1 file per format.
 Validates before scaling to full dataset.
 
-Tests:
-  1. Desjardins CSV — Siam House Jan 2025
-  2. RBC CSV — Garden Bistro Dec 2025
-  3. Amex CSV — Lotus Kitchen Jan 2025
-  4. Desjardins CSV — Lotus Kitchen 2026.01 (format change test)
+Integration tests are fixture-driven. Set the env var
+PARSER_TEST_FIXTURE_BASE to point at a local directory containing the
+expected fixture files (the file names in PDF_TESTS are placeholders;
+override the full path via PARSER_TEST_FIXTURE_BASE_BDC etc. for full
+control). Without env vars set, integration tests are skipped — only
+the import smoke test runs (matches the OSS distribution / CI behavior).
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 from parsers import parse_file
 
-BASE = "./data/bank_statements"
+BASE = os.environ.get('PARSER_TEST_FIXTURE_BASE', './data/bank_statements')
 
 TEST_FILES = [
     {
@@ -201,22 +203,25 @@ def run_pdf_test(label: str, path: str, parser_name: str, expected_format: str):
     return passed
 
 
+# PDF integration tests. Fixture paths sourced from env vars to keep the
+# OSS distribution free of debtor-specific paths and card identifiers.
+# When env vars are unset, these tests skip cleanly.
 PDF_TESTS = [
     {
         'label': 'BDC Mastercard PDF',
-        'path': '/Users/Owner_A/Downloads/Accounting BOOKKEEPING_FOLDER/compta/relevés cartes/BDC ZZZZ 2024/sample.pdf',
+        'path': os.environ.get('PARSER_TEST_FIXTURE_BDC', ''),
         'parser': 'parse_bdc_mc_pdf_v2',
         'expected_format': 'bdc_mc_pdf',
     },
     {
-        'label': 'TD Aeroplan Visa PDF (XXXX)',
-        'path': '/Users/Owner_A/Downloads/Accounting BOOKKEEPING_FOLDER/Perso expenses/Relevés/TD_0394/TD_AEROPLAN_VISA_INFINITE_0394_Mar_24-2025.pdf',
+        'label': 'TD Aeroplan Visa PDF',
+        'path': os.environ.get('PARSER_TEST_FIXTURE_TD_VISA', ''),
         'parser': 'parse_td_visa_pdf_v2',
         'expected_format': 'td_visa_pdf',
     },
     {
-        'label': 'TD Aeroplan Visa Infinite Privilege PDF (YYYY)',
-        'path': '/Users/Owner_A/Downloads/Accounting BOOKKEEPING_FOLDER/compta/relevés cartes/TD YYYY 2024/TD_AEROPLAN_VISA_INFINITE_PRIVILEGE_8371_Jan_22-2024.pdf',
+        'label': 'TD Aeroplan Visa Infinite Privilege PDF',
+        'path': os.environ.get('PARSER_TEST_FIXTURE_TD_VISA_PRIVILEGE', ''),
         'parser': 'parse_td_visa_pdf_v2',
         'expected_format': 'td_visa_pdf',
     },

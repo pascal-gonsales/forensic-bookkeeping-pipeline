@@ -1294,7 +1294,7 @@ def parse_td_visa_pdf_v2(file_path: str) -> ParseResult:
                             period_start_month = int(MONTH_EN_MAP.get(start_month_str, MONTH_MAP_FR.get(start_month_str, '01')))
                             statement_year = int(m.group(4))
 
-                    # Fallback: filename "TD_AEROPLAN_VISA_INFINITE_0394_Jun_24-2024.pdf"
+                    # Fallback: filename "TD_AEROPLAN_VISA_INFINITE_XXXX_<DATE>.pdf"
                     if not statement_year:
                         m = re.search(r'(\w{3})_\d+-(\d{4})', Path(file_path).name)
                         if m:
@@ -1596,11 +1596,11 @@ def detect_pdf_format(file_path: str) -> str:
             text_compact = text_upper.replace(' ', '')
             header = text_upper[:600]
 
-            # TD Aeroplan Visa (personal CC, account XXXX)
+            # TD Aeroplan Visa (personal CC, account XXXX (placeholder))
             if 'TD' in text_upper and ('AEROPLAN' in text_upper or 'AÉROPLAN' in text_upper or 'AÉROPLAN' in text):
                 return 'td_visa_pdf'
 
-            # BDC Mastercard (personal CC, account ZZZZ)
+            # BDC Mastercard (personal CC, account YYYY (placeholder))
             # Skip BDC loan agreements (different document type)
             if ('SOLUTIONS MASTERCARD' in text_upper
                     or ('BDC' in text_upper and 'MASTERCARD' in text_upper)):

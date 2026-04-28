@@ -26,6 +26,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -35,7 +36,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 VALIDATE = REPO_ROOT / 'scripts' / 'validate_package.py'
-SKILL_DIR = Path('/Users/Pascal/.claude/skills/forensic-bookkeeping')
+# Skill files live in this repo at /skill/. Earlier prototype used a hardcoded
+# ~/.claude path that broke on fresh clones and CI. Override via SKILL_DIR env
+# var if your skill lives elsewhere.
+SKILL_DIR = Path(os.environ.get('SKILL_DIR', str(REPO_ROOT / 'skill')))
 
 
 def run_validator(args: list[str]) -> tuple[int, str]:

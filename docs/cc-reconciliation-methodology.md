@@ -1,5 +1,5 @@
 # Credit Card Reconciliation Methodology — Research & Best Practices
-**Context:** Demo Restaurant Group forensic bookkeeping. Personal CC transactions (from BOOKKEEPER's Excel) vs. bank/CC statements (PDF/CSV). Insolvency/consumer proposal context requires defensible audit trail.
+**Context:** Demo Restaurant Group forensic bookkeeping. Personal CC transactions (from the bookkeeper's Excel) vs. bank/CC statements (PDF/CSV). Insolvency/consumer proposal context requires defensible audit trail.
 
 **Date:** 2026-03-30
 
@@ -10,7 +10,7 @@
 ### The Core Problem
 You have two data sources:
 - **Source A (CC Statements):** CSV/PDF with date, description (merchant name), amount, card number. Machine-generated, authoritative.
-- **Source B (BOOKKEEPER's Excel):** Hand-filled tabs with date, supplier name, amount, company assignment (which restaurant the expense belongs to). Human-entered, potentially inaccurate.
+- **Source B (the bookkeeper's Excel):** Hand-filled tabs with date, supplier name, amount, company assignment (which restaurant the expense belongs to). Human-entered, potentially inaccurate.
 
 The goal is to match every row in Source B to exactly one row in Source A, and flag anything that doesn't match in either direction.
 
@@ -20,9 +20,9 @@ The goal is to match every row in Source B to exactly one row in Source A, and f
 
 1. **Amount is the most reliable field.** Even a sloppy bookkeeper writes down the dollar amount correctly because it comes from the receipt. Amounts are rarely transcribed wrong — they're numbers, not free text.
 
-2. **Date is second.** Hand-entered dates can drift by 1-3 days from the actual transaction posting date. The CC statement shows the posting date; BOOKKEEPER's Excel might show the purchase date, the receipt date, or the date he entered it. A tolerance of **+/- 3 calendar days** is standard in forensic reconciliation. For month-end transactions, extend to **+/- 5 days** (a Dec 30 purchase might post Jan 2).
+2. **Date is second.** Hand-entered dates can drift by 1-3 days from the actual transaction posting date. The CC statement shows the posting date; the bookkeeper's Excel might show the purchase date, the receipt date, or the date he entered it. A tolerance of **+/- 3 calendar days** is standard in forensic reconciliation. For month-end transactions, extend to **+/- 5 days** (a Dec 30 purchase might post Jan 2).
 
-3. **Description is least reliable for matching** but most useful for validation. CC statements say "SUPPLIER_ALPHASERVICEOWNER_BM" while BOOKKEEPER's Excel says "SUPPLIER_A" or "Owner_Bmentaire". Use description for confirming matches, not finding them.
+3. **Description is least reliable for matching** but most useful for validation. CC statements say "<MERCHANT_STRING>" while the bookkeeper's Excel says "<Supplier_A>" or "<Supplier_B>". Use description for confirming matches, not finding them.
 
 ### Tolerance Recommendations
 
@@ -44,7 +44,7 @@ This is the industry standard approach, and it's what your `reconciliation.py` a
 
 **Pass 4 — Description-assisted match:** For remaining unmatched, use fuzzy string matching on description/supplier name to suggest possible matches. Mark as SUGGESTED — requires manual review.
 
-After all passes, anything left unmatched in Source A = "on the statement but not in BOOKKEEPER's Excel" (potentially unreported expense). Anything left unmatched in Source B = "in BOOKKEEPER's Excel but not on the statement" (potentially fabricated or misattributed).
+After all passes, anything left unmatched in Source A = "on the statement but not in the bookkeeper's Excel" (potentially unreported expense). Anything left unmatched in Source B = "in the bookkeeper's Excel but not on the statement" (potentially fabricated or misattributed).
 
 ---
 
@@ -55,17 +55,17 @@ After all passes, anything left unmatched in Source A = "on the statement but no
 
 2. **Duplicate matching:** One Excel row accidentally matched to multiple CC charges, or vice versa. Once a transaction is matched, it MUST be removed from the candidate pool. Your current code does this correctly with `used_inflows`.
 
-3. **Amount sign confusion:** CC statements may show charges as positive or negative depending on the bank. BOOKKEEPER's Excel may or may not use signs. Normalize everything to absolute value for matching, track debit/credit separately.
+3. **Amount sign confusion:** CC statements may show charges as positive or negative depending on the bank. the bookkeeper's Excel may or may not use signs. Normalize everything to absolute value for matching, track debit/credit separately.
 
 4. **FX transactions:** If any purchases were in USD or THB, the CC statement shows CAD equivalent, but the Excel might show the original currency amount. Flag any amount that's close but not exact — could be FX.
 
-5. **Returns/credits:** A refund on the CC statement (-$500) may not appear in BOOKKEEPER's Excel at all, or may appear as a separate line. Match refunds to the original charge if possible.
+5. **Returns/credits:** A refund on the CC statement (-$500) may not appear in the bookkeeper's Excel at all, or may appear as a separate line. Match refunds to the original charge if possible.
 
 6. **Partial payments / installments:** A $3,000 Warehouse Club order paid in 3 installments of $1,000 on the CC but entered as one $3,000 line in Excel. This creates a one-to-many mismatch.
 
 7. **Month-end cutoff errors:** Transaction in one month on CC statement, recorded in next month in Excel. This is the most common reconciliation discrepancy in restaurant operations.
 
-8. **Commingled funds:** In your specific case, personal CCs used for business expenses. The CC statement has BOTH personal and business charges. BOOKKEEPER's Excel should only have business charges. Any CC transaction not in BOOKKEEPER's Excel could be personal — or it could be a business expense he forgot to record.
+8. **Commingled funds:** In your specific case, personal CCs used for business expenses. The CC statement has BOTH personal and business charges. the bookkeeper's Excel should only have business charges. Any CC transaction not in the bookkeeper's Excel could be personal — or it could be a business expense he forgot to record.
 
 ### Specific to Your Situation (Insolvency Context)
 9. **Confirmation bias:** The person who filled the Excel has an incentive to classify as much as possible as "business" to justify reimbursements. Cross-check classifications against the `cc_classification.py` rules.
@@ -80,7 +80,7 @@ After all passes, anything left unmatched in Source A = "on the statement but no
 
 ### Split Transactions (One CC Charge, Multiple Excel Rows)
 
-Example: One Warehouse Club charge of $1,500 on the CC, split across "Lotus Kitchen $800" and "Siam House $700" in BOOKKEEPER's Excel.
+Example: One Warehouse Club charge of $1,500 on the CC, split across "Lotus Kitchen $800" and "Siam House $700" in the bookkeeper's Excel.
 
 **Strategy:**
 1. After Pass 1-3 (direct matching), look at unmatched CC transactions.
@@ -109,12 +109,12 @@ def find_split_matches(cc_amount, cc_date, excel_rows, max_parts=3, date_tol=1, 
 
 ### Multiple Same-Amount Transactions on Same Day
 
-Example: 3 SUPPLIER_A deliveries of $500 each on the same day.
+Example: 3 <Supplier_A> deliveries of $500 each on the same day.
 
 **Strategy:**
 1. **Sequential consumption:** Match them in order (first CC row to first Excel row, etc.). This works when both sources are in the same order.
 2. **Description differentiation:** Even if amounts are identical, descriptions might differ slightly ("SUPPLIER_ALPHA 001" vs "SUPPLIER_ALPHA 002") or time stamps might differ.
-3. **Count-based matching:** If the CC has 3x $500 SUPPLIER_A charges and the Excel has 3x $500 SUPPLIER_A entries on the same day, match them as a group. The individual pairing doesn't matter — what matters is the count matches.
+3. **Count-based matching:** If the CC has 3x $500 <Supplier_A> charges and the Excel has 3x $500 <Supplier_A> entries on the same day, match them as a group. The individual pairing doesn't matter — what matters is the count matches.
 4. **Flag if counts differ:** If CC has 3x $500 but Excel has 2x $500, flag the entire group for review.
 
 ```python
@@ -137,7 +137,7 @@ def match_identical_groups(cc_rows, excel_rows, date_tol=1):
 
 ### Many-to-One (Multiple CC Charges = One Excel Row)
 
-Less common but possible: BOOKKEEPER enters one line "SUPPLIER_A $1,500" when there were actually 3 charges of $500.
+Less common but possible: the bookkeeper enters one line "<Supplier_A> $1,500" when there were actually 3 charges of $500.
 
 **Strategy:** After direct matching fails for an Excel row, search for combinations of CC transactions from the same merchant within +/- 3 days that sum to the Excel amount. Same subset-sum logic as split transactions, but in reverse.
 
@@ -146,12 +146,12 @@ Less common but possible: BOOKKEEPER enters one line "SUPPLIER_A $1,500" when th
 ## 4. CARD-TO-TAB MAPPING
 
 ### The Problem
-BOOKKEEPER's Excel has tabs labeled "TD AAAA" but the actual card ending is YYYY. Tab names are unreliable.
+the bookkeeper's Excel has tabs labeled "TD <CARD_A>" but the actual card ending is <CARD_B>. Tab names are unreliable.
 
 ### Resolution Strategy (Ranked by Reliability)
 
 **Method 1 — Amount fingerprinting (most reliable):**
-Take the first 5-10 transactions from a tab in BOOKKEEPER's Excel and find which CC statement has those exact amounts on those approximate dates. Each card has a unique "fingerprint" of transaction amounts. Even 3-4 matching amounts in sequence is near-certain identification.
+Take the first 5-10 transactions from a tab in the bookkeeper's Excel and find which CC statement has those exact amounts on those approximate dates. Each card has a unique "fingerprint" of transaction amounts. Even 3-4 matching amounts in sequence is near-certain identification.
 
 ```python
 def identify_card_by_fingerprint(excel_tab_rows, all_cc_statements, min_matches=5):
@@ -184,7 +184,7 @@ Find transactions with unusual amounts (not round numbers like $500 or $1,000) i
 **Method 4 — Date range alignment:**
 Check which CC statement covers the same date range as the Excel tab. If a tab has entries from Jan-Jun 2024 and only one card was active during that period, that's the match.
 
-**Method 5 — Ask BOOKKEEPER.**
+**Method 5 — Ask the bookkeeper.**
 Seriously. If the other methods are ambiguous, a 5-minute conversation may resolve it faster than hours of analysis.
 
 ### Documentation
@@ -192,7 +192,7 @@ Once identified, create a mapping table and include the evidence:
 
 | Excel Tab | Actual Card | Confidence | Evidence |
 |-----------|-------------|------------|----------|
-| TD AAAA | TD *YYYY | 98% | 18/20 sample amounts matched |
+| TD <CARD_A> | TD *<CARD_B> | 98% | 18/20 sample amounts matched |
 | Desj Perso | Desj *4002 | 95% | Monthly totals within $5 for 8 months |
 
 ---
@@ -227,7 +227,7 @@ For each matched pair:
 - All unmatched Excel transactions (in Excel but not on statement)
 - All split matches (one-to-many or many-to-one)
 - All same-amount-same-day groups where counts don't match
-- All description mismatches (Excel says "SUPPLIER_A" but CC says "Warehouse Club")
+- All description mismatches (Excel says "<Supplier_A>" but CC says "Warehouse Club")
 
 **E. Summary Statistics**
 - Total CC charges vs. total Excel entries (by card, by month)
@@ -257,7 +257,7 @@ For each matched pair:
 | Library | Purpose | Status |
 |---------|---------|--------|
 | `pandas` | Data manipulation, merging, grouping | Install needed |
-| `openpyxl` | Read BOOKKEEPER's Excel tabs | Installed |
+| `openpyxl` | Read the bookkeeper's Excel tabs | Installed |
 | `pdfplumber` | Parse CC statement PDFs | Installed |
 | `difflib` | Built-in fuzzy string matching | Available (stdlib) |
 | `recordlinkage` | Academic-grade record linkage with blocking, comparison, classification | Install needed |
@@ -381,7 +381,7 @@ Given the existing codebase (`cc_classification.py`, `reconciliation.py`, `pipel
 ### New Module: `cc_reconciliation.py`
 
 **Inputs:**
-1. BOOKKEEPER's Excel workbook (tabs per card, hand-filled)
+1. the bookkeeper's Excel workbook (tabs per card, hand-filled)
 2. CC statement PDFs/CSVs (already parsed by `pdf_parsers_v2.py`)
 3. Card-to-tab mapping (determined by fingerprinting)
 

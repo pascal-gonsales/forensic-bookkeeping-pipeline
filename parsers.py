@@ -12,6 +12,8 @@ A file named "Desjardins" could contain RBC data. Trust content, not names.
 
 import csv
 import io
+import json
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -650,19 +652,23 @@ def _validate_amex(transactions: list, warnings: list) -> ValidationResult:
 # Entity guess from path (advisory only — NOT authoritative)
 # ---------------------------------------------------------------------------
 
-ENTITY_PATTERNS = [
-    (r'mae\s*sri', 'Siam House'),
-    (r'siam\s*thai', 'Lotus Kitchen'),
-    (r'siam\s*s\b', 'Siam Holdings Inc'),
-    (r'garden\s*room', 'Garden Bistro'),
-    (r'vine|wine\s*room', 'Vine Room'),
-]
+# Debtor-specific entity-from-path regex patterns sourced from env var.
+# Format: ENTITY_PATTERNS_JSON='[["regex1", "Label A"], ["regex2", "Label B"]]'
+# OSS distribution leaves it unset (no path-based entity hints registered).
+# Path-guess is advisory only — entity assignment is authoritative from
+# explicit per-file frontmatter, not from path. See _guess_entity_from_path.
+try:
+    ENTITY_PATTERNS = [
+        (p, label) for p, label in json.loads(os.environ.get('ENTITY_PATTERNS_JSON', '[]'))
+    ]
+except (json.JSONDecodeError, ValueError, TypeError):
+    ENTITY_PATTERNS = []
 
 
 def _guess_entity_from_path(file_path: str) -> str:
     """Guess entity from file path. This is a HINT only — not authoritative.
     Only checks the last 3 path components to avoid false matches from
-    Google Drive paths (e.g., owner_a@example.com in the drive URL)."""
+    cloud-drive paths (e.g., owner email addresses in the drive URL)."""
     parts = Path(file_path).parts
     # Only check last 3 components (folder/subfolder/filename)
     relevant = '/'.join(parts[-3:]).lower() if len(parts) >= 3 else file_path.lower()
